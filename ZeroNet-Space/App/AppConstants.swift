@@ -21,6 +21,9 @@ enum AppConstants {
     /// Bundle Identifier
     static let bundleIdentifier = "wq.ZeroNet-Space"
 
+    /// GitHub仓库地址
+    static let githubRepositoryURL = "https://github.com/materialofair/zeroNet_Space"
+
     // MARK: - Security
 
     /// 最小密码长度

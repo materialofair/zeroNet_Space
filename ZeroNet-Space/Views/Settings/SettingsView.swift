@@ -670,6 +670,45 @@ struct AboutView: View {
                     .cornerRadius(16)
                     .padding(.horizontal)
 
+                    // GitHub 仓库链接
+                    Button(action: {
+                        if let url = URL(string: AppConstants.githubRepositoryURL) {
+                            UIApplication.shared.open(url)
+                        }
+                    }) {
+                        HStack(spacing: 12) {
+                            Image(systemName: "chevron.left.forwardslash.chevron.right")
+                                .font(.title2)
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [.blue, .purple],
+                                        startPoint: .leading,
+                                        endPoint: .trailing
+                                    )
+                                )
+
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(String(localized: "settings.github.title"))
+                                    .font(.headline)
+                                    .foregroundColor(.primary)
+
+                                Text(String(localized: "settings.github.description"))
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+
+                            Spacer()
+
+                            Image(systemName: "arrow.up.right.square")
+                                .foregroundColor(.secondary)
+                        }
+                        .padding()
+                        .background(Color(.systemGroupedBackground))
+                        .cornerRadius(12)
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 8)
+
                     // 版权信息
                     Text(String(localized: "settings.copyright"))
                         .font(.caption)

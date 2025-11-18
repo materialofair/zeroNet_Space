@@ -7367,6 +7367,42 @@
         }
       }
     },
+    "settings.github.title" : {
+      "comment" : "GitHub repository link title",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub Repository"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "GitHub 仓库"
+          }
+        }
+      }
+    },
+    "settings.github.description" : {
+      "comment" : "GitHub repository link description",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "100% Open Source • View Source Code"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "100% 开源 • 查看源代码"
+          }
+        }
+      }
+    },
     "settings.disguiseMode" : {
       "extractionState" : "manual",
       "localizations" : {
