@@ -2,12 +2,13 @@
 
 <div align="center">
 
-**真正的离线隐私空间 | 零网络 | 零追踪**
+**真正的离线隐私空间 | 100%开源 | 零网络 | 零追踪**
 
 [![Platform](https://img.shields.io/badge/Platform-iOS%2015.0+-lightgrey.svg)](https://www.apple.com/ios/)
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)](https://swift.org)
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-3.0-blue.svg)](https://developer.apple.com/xcode/swiftui/)
 [![Security](https://img.shields.io/badge/Security-AES--256--GCM-green.svg)](https://en.wikipedia.org/wiki/Galois/Counter_Mode)
+[![License](https://img.shields.io/badge/License-GPL--3.0-blue.svg)](LICENSE)
 
 [English](#english) | [中文](#中文)
 
@@ -19,15 +20,110 @@
 
 ### 📖 关于项目
 
-零网络空间是一款iOS隐私保护应用，承诺：
+零网络空间是一款**完全开源**的iOS隐私保护应用。
 
+**我们承诺**：
 - ✅ **零网络**：代码级阻断所有网络请求
 - ✅ **零追踪**：不含任何SDK、广告、统计、云备份
 - ✅ **零账号**：不注册、不登录、不收集隐私数据
 - ✅ **本地加密**：AES-256-GCM军用级加密，密钥仅存本地Keychain
-- ✅ **隐私优先**：通过App Store隐私审查，符合最新隐私标准
+- ✅ **100%开源**：所有代码公开透明，接受社区审查
 
 **核心理念**：你的数据应该只属于你自己，不应该被上传、分析或追踪。
+
+---
+
+### 💡 为什么开源？
+
+**简单真诚的答案**：
+
+> **建立信任。**
+
+很多应用都声称"零网络"、"零追踪"，但用户无法验证。  
+我选择开源，是为了让任何人都可以检查代码，确认我们真的做到了承诺。
+
+**开源不是为了免费，而是为了透明。**
+
+你可以：
+- 📖 查看所有源代码，验证"真的没有网络代码"
+- 🔍 检查加密实现，确认数据安全
+- 🛡️ 审查隐私保护机制
+- 🧪 自己编译运行，完全掌控
+
+如果你发现任何可疑代码，欢迎在GitHub提Issue。
+
+---
+
+### 🔓 Fork 政策
+
+我们**欢迎并允许**任何人Fork这个项目进行修改、学习、研究。
+
+#### ✅ 你可以做什么
+
+- Fork代码并自己编译使用
+- 修改代码满足个人需求
+- 学习iOS开发和隐私保护技术
+- 提交Pull Request改进项目
+- 基于此代码创建衍生项目（需遵守GPL-3.0）
+
+#### ⚠️ 唯一的要求
+
+**请不要在Fork版本中使用"零网络空间"品牌名称和Logo。**
+
+**为什么？**
+- 防止用户混淆官方版本和Fork版本
+- 确保用户知道他们使用的是哪个版本
+- 保护品牌不被滥用
+
+**如何做？**
+- ✅ "基于零网络空间开发的XXX"
+- ✅ "灵感来自零网络空间"
+- ❌ "零网络空间增强版"
+- ❌ "零网络空间Pro"
+
+详细的商标使用指南请查看 [TRADEMARK.md](TRADEMARK.md)。
+
+---
+
+### 🏪 App Store 官方版本
+
+#### 为什么开源还有App Store版本？
+
+**两个原因**：
+
+**1. 便利性**
+- 自己编译需要：
+  - 下载Xcode（8GB+）
+  - 学习iOS开发
+  - Apple开发者账号（$99/年）
+  - 每7天重新签名（免费证书）
+
+- App Store版本：
+  - 一键下载
+  - 自动更新
+  - 官方技术支持
+
+**2. 可持续开发**
+- 开源项目需要持续维护
+- 付费版本支持项目长期发展
+- 避免添加广告或收集数据
+
+#### 定价模式
+
+**免费版**：
+- ✅ 完整的加密功能（AES-256-GCM）
+- ✅ 隐藏空间
+- ✅ 伪装界面
+- ✅ 深色模式
+- ✅ 所有核心安全功能
+- ⚠️ **文件数量限制：最多75个文件**
+
+**Pro版（$2.99一次性买断）**：
+- 🔓 **无限文件存储**
+- 🔓 **访客模式**（双密码体系）
+- 💰 **永久使用，无订阅**
+
+> 💡 **选择权在你手里**：可以付费支持开发，也可以自己编译免费使用。
 
 ---
 
@@ -41,9 +137,6 @@
 
 #### 高级隐私功能（V1.2）
 - 👥 **访客模式** - 双密码体系，临时访问不暴露核心隐私
-  - 主密码（6-8位）：完全访问权限
-  - 访客密码（6-8位纯数字）：受限访问，自动隐藏敏感内容
-  - 服务端密码验证：访客密码不能与主密码相同
 - 🔒 **隐藏空间** - 私密笔记和敏感文件的隐藏区域
 - 🧮 **伪装界面** - 计算器伪装模式，保护隐私
 - 🌓 **深色模式** - 完整的深浅色主题支持
@@ -51,128 +144,10 @@
 
 #### 安全特性
 - 🛡️ **应用重启强制认证** - 防止未授权访问
-- 🔐 **密码安全增强** - PBKDF2密钥派生，100,000次迭代
+- 🔐 **PBKDF2密钥派生** - 100,000次迭代，防止暴力破解
 - 🔒 **线程安全保护** - @MainActor确保状态管理安全
 - 🧵 **并发访问控制** - NSLock保护关键操作
 - 🗑️ **安全删除** - 文件删除后彻底清除加密数据
-- 💾 **原子操作** - 确保数据一致性，防止数据损坏
-- 🔑 **密钥安全管理** - 内存安全擦除，防止密钥泄露
-
----
-
-### 🔒 最新安全增强（V1.2 Security Update）
-
-#### 加密服务升级
-- ✅ **PBKDF2密钥派生**：100,000次迭代，防止暴力破解
-- ✅ **安全随机生成**：使用CryptoKit的安全随机数生成器
-- ✅ **盐值管理**：每次加密使用唯一的16字节随机盐
-- ✅ **IV管理**：每次加密使用唯一的12字节随机IV
-- ✅ **内存安全**：密钥使用后立即安全擦除
-
-#### 钥匙串服务增强
-- ✅ **原子操作**：确保密码设置和验证的原子性
-- ✅ **并发保护**：NSLock防止并发访问冲突
-- ✅ **错误处理**：完善的错误传播和恢复机制
-- ✅ **数据一致性**：防止部分写入导致的数据损坏
-
-#### 认证系统优化
-- ✅ **状态管理**：修复访客模式状态管理漏洞
-- ✅ **密码验证**：服务端验证防止弱密码策略绕过
-- ✅ **错误传播**：完整的错误处理链路
-- ✅ **线程安全**：@MainActor保证UI更新安全
-
----
-
-### 💰 定价模式与内购说明
-
-#### App Store 版本定价模式
-
-**基础版（免费）**：
-- ✅ 完整的加密功能（AES-256-GCM）
-- ✅ 隐藏空间
-- ✅ 伪装界面
-- ✅ 深色模式
-- ✅ 所有核心安全功能
-- ⚠️ **文件数量限制：最多75个文件**
-
-**Pro版功能（应用内购买）**：
-- 🔓 **无限文件存储** - 解除75个文件限制
-- 🔓 **访客模式** - 双密码体系，保护隐私
-- 💰 **一次性买断** - 永久使用，无订阅
-
-#### 为什么这样设计？
-
-**1. 可持续的开源模式**
-- 免费版满足基础需求（75个文件对大多数用户足够）
-- 高级用户付费支持持续开发
-- 避免广告和数据收集
-
-**2. 参考成熟开源项目**
-- **Bitwarden**：基础版免费，高级功能付费
-- **1Password**：开源组件免费，完整版付费
-- **Obsidian**：个人使用免费，商业使用付费
-
-**3. App Store 便利性**
-- 无需安装Xcode（8GB+下载）
-- 无需学习iOS开发和编译流程
-- 无需Apple开发者账号（$99/年）
-- 自动更新和官方技术支持
-
-**核心原则**：**代码永远免费，便利性和高级功能合理收费**。
-
-#### 功能对比
-
-| 特性 | App Store 免费版 | App Store Pro版 |
-|------|----------------|----------------|
-| 完整加密功能 | ✅ | ✅ |
-| 隐藏空间 | ✅ | ✅ |
-| 伪装界面 | ✅ | ✅ |
-| 深色模式 | ✅ | ✅ |
-| 最新安全增强 | ✅ | ✅ |
-| **文件数量** | **最多75个** | **无限** |
-| **访客模式** | ❌ 需要Pro | ✅ |
-| 获取方式 | ✅ 一键下载 | ✅ 一键下载 |
-| 自动更新 | ✅ 自动推送 | ✅ 自动推送 |
-| 技术支持 | ✅ 官方支持 | ✅ 优先支持 |
-| **价格** | **免费** | **一次性内购** |
-
-> 💡 **普通用户**：免费版足够日常使用（75个文件）  
-> 💡 **高级用户**：Pro版解锁所有功能，一次性买断永久使用
-
-#### 内购透明承诺
-
-- ✅ **无订阅制**：所有内购都是一次性买断，永久使用
-- ✅ **无隐藏费用**：明码标价，不会有额外收费
-- ✅ **功能完整**：免费版和Pro版都包含核心加密功能
-- ✅ **零网络承诺不变**：内购验证完全本地，不联网
-
----
-
-### 🚀 快速开始
-
-[![Download on App Store](https://developer.apple.com/app-store/marketing/guidelines/images/badge-download-on-the-app-store.svg)](https://apps.apple.com/app/零网络空间)
-
-> 即将上架，敬请期待！
-
----
-
-### 🛠️ 技术栈
-
-#### 核心技术
-- **语言**: Swift 5.9
-- **UI框架**: SwiftUI 3.0+
-- **数据存储**: SwiftData + FileManager
-- **加密算法**: CryptoKit (AES-256-GCM)
-- **密码管理**: iOS Keychain + PBKDF2
-- **最低支持**: iOS 15.0+
-
-#### 架构特点
-- ✅ MVVM架构模式
-- ✅ @MainActor线程安全
-- ✅ 环境对象依赖注入
-- ✅ 现代Swift并发（async/await）
-- ✅ 原子操作保证数据一致性
-- ✅ 并发控制防止竞态条件
 
 ---
 
@@ -198,18 +173,10 @@ IV: 12字节随机（每次加密唯一）
 内存安全: 密钥使用后立即擦除
 ```
 
-#### 并发安全
-```
-主线程: @MainActor保护UI状态
-原子操作: NSLock保护关键数据
-状态管理: Published属性线程安全
-错误处理: 完整的错误传播链
-```
-
-#### 网络隔离
+#### 网络隔离验证
 ```
 网络权限: ❌ 未请求
-网络代码: ❌ 不存在
+网络代码: ❌ 不存在（可查看源码验证）
 第三方SDK: ❌ 零依赖
 云服务: ❌ 完全本地
 统计追踪: ❌ 零收集
@@ -217,25 +184,105 @@ IV: 12字节随机（每次加密唯一）
 ```
 
 **验证方式**：
-- 检查`PrivacyInfo.xcprivacy` - 了解应用隐私实践
-- 运行时监控 - 可使用Charles/Wireshark验证零网络流量
+- 🔍 查看源代码 - 搜索 `URLSession`、`Alamofire`、`网络请求`
+- 📄 检查 `PrivacyInfo.xcprivacy` - 隐私清单文件
+- 🛠️ 运行时监控 - 使用Charles/Wireshark验证零网络流量
 
 ---
 
-### 🧪 安全反馈
+### 🛠️ 技术栈
 
-如果发现安全问题：
-- 📧 请通过 GitHub Issues 私密方式报告
-- 💬 或直接联系项目维护者
-- 🏆 负责任披露将在 README 中致谢
+#### 核心技术
+- **语言**: Swift 5.9
+- **UI框架**: SwiftUI 3.0+
+- **数据存储**: SwiftData + FileManager
+- **加密算法**: CryptoKit (AES-256-GCM)
+- **密码管理**: iOS Keychain + PBKDF2
+- **最低支持**: iOS 15.0+
 
-#### 安全更新记录
-- **V1.2 (2025-01-17)**: 重大安全增强
-  - 修复EncryptionService密钥派生漏洞
-  - 修复KeychainService并发安全问题
-  - 修复AuthenticationViewModel状态管理漏洞
-  - 增强CalculatorViewModel内存安全
-  - 完善错误处理和传播机制
+#### 架构特点
+- ✅ MVVM架构模式
+- ✅ @MainActor线程安全
+- ✅ 环境对象依赖注入
+- ✅ 现代Swift并发（async/await）
+- ✅ 原子操作保证数据一致性
+
+---
+
+### 🤝 贡献指南
+
+我们欢迎社区贡献！详细的贡献指南请查看 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
+#### 欢迎的贡献类型
+
+✅ **立即欢迎**：
+- Bug修复
+- 性能优化
+- 安全加固
+- 国际化翻译
+- 文档改进
+
+⚠️ **需要讨论**：
+- 新功能开发
+- UI/UX重大改动
+- 架构调整
+
+❌ **明确拒绝**：
+- 任何涉及网络的功能
+- 移除付费限制（Fork后可自行修改）
+- 违背"零网络"理念的功能
+
+#### 如何贡献
+
+1. Fork 这个仓库
+2. 创建你的功能分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交你的修改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 开启一个 Pull Request
+
+---
+
+### 🏆 致谢
+
+感谢所有为这个项目做出贡献的人！
+
+**贡献者列表**：
+<!-- 贡献者将自动添加到这里 -->
+- 等待第一位贡献者...
+
+**特别感谢**：
+- Apple CryptoKit 团队 - 提供安全的加密框架
+- SwiftUI 社区 - 现代化的UI开发
+- 所有提供反馈和建议的用户
+
+---
+
+### 🔒 安全反馈
+
+如果你发现安全漏洞：
+
+1. **请不要公开披露** - 先私密报告
+2. **通过以下方式联系**：
+   - GitHub Issues（使用"Security"标签）
+   - 项目维护者（详见GitHub Profile）
+3. **负责任披露奖励**：
+   - 在README中公开致谢
+   - App内致谢页展示
+
+---
+
+### 📄 许可证
+
+本项目采用 **GPL-3.0** 许可证 - 详见 [LICENSE](LICENSE) 文件。
+
+#### GPL-3.0 简单解释
+
+- ✅ 可以自由使用、修改、分发
+- ✅ 可以用于商业目的
+- ⚠️ **修改后的代码必须开源**
+- ⚠️ **衍生作品必须使用GPL-3.0**
+
+详细许可证条款请查看 LICENSE 文件。
 
 ---
 
@@ -243,21 +290,48 @@ IV: 12字节随机（每次加密唯一）
 
 #### 数据安全提示
 
-- **忘记密码无法恢复**：我们无法重置密码，忘记密码需要卸载应用（数据将丢失）
-- **无云备份**：所有数据仅存储本地，卸载应用或更换设备会丢失数据
-- **离线使用**：完全不联网意味着无法远程恢复数据
-- **请务必记住密码**：建议使用密码管理器记录
+- **忘记密码无法恢复** - 无法重置密码，忘记密码需要卸载应用
+- **无云备份** - 所有数据仅存储本地，卸载应用会丢失数据
+- **离线使用** - 完全不联网意味着无法远程恢复数据
+- **请务必记住密码** - 建议使用密码管理器记录
 
 #### 隐私承诺
 
-- ✅ 我们**永远不会**添加网络功能（内购验证完全本地）
+- ✅ 我们**永远不会**添加网络功能
 - ✅ 我们**永远不会**收集用户数据
 - ✅ 我们**永远不会**添加追踪或统计
-
 - ✅ 我们**永远不会**添加广告
-- ✅ 内购**永远**是一次性买断，绝不改为订阅制
+- ✅ **代码永远开源，接受社区监督**
 
+---
 
+### 🚀 快速开始
+
+#### 使用 App Store 官方版本（推荐）
+
+[![Download on App Store](https://developer.apple.com/app-store/marketing/guidelines/images/badge-download-on-the-app-store.svg)](https://apps.apple.com/app/零网络空间)
+
+> 即将上架，敬请期待！
+
+#### 自己编译（高级用户）
+
+```bash
+# 1. 克隆仓库
+git clone https://github.com/你的用户名/ZeroNetSpace.git
+cd ZeroNetSpace
+
+# 2. 使用Xcode打开
+open ZeroNetSpace.xcodeproj
+
+# 3. 选择你的开发团队（需要Apple ID）
+# 4. 选择真机或模拟器
+# 5. 点击运行（⌘R）
+```
+
+**注意**：
+- 需要 Xcode 15.0+
+- 需要 macOS 13.0+ (Ventura)
+- 真机运行需要 Apple 开发者账号（免费或付费均可）
 
 ---
 
@@ -266,25 +340,50 @@ IV: 12字节随机（每次加密唯一）
 - **当前版本**: V1.2
 - **开发状态**: ✅ 稳定维护中
 - **最后更新**: 2025-01-17
+- **开源日期**: 2025-01-18
 - **下个版本**: V2.0（计划中）
-- **App Store状态**: 📋 准备提交审核中
 
 ---
 
 ### 🗺️ 路线图
 
-#### V2.0（计划中）
-- [ ] 云端加密备份（可选，需用户主动启用）
-- [ ] 密码找回机制（基于本地安全问题）
-- [ ] 更多文件格式支持
-- [ ] 批量操作优化
-- [ ] 性能优化和内存管理改进
+#### V1.2 ✅ 已完成（2025-01-17）
+- ✅ 访客模式（双密码体系）
+- ✅ 隐藏空间
+- ✅ 伪装界面
+- ✅ PBKDF2密钥派生
+- ✅ 重大安全增强
 
-#### 长期规划
-- [ ] iPad适配
-- [ ] macOS版本
+#### V2.0 🚧 计划中
+- [ ] 文件夹二级密码
+- [ ] 自毁锁定（多次密码错误）
+- [ ] 私密笔记（Markdown支持）
+- [ ] 文件加密搜索
+- [ ] 性能优化
+
+#### V3.0 💡 长期规划
+- [ ] iPad 适配
+- [ ] macOS 版本
 - [ ] 更多语言支持
-- [ ] 插件系统
+- [ ] 离线密码本
+- [ ] 离线证件钱包
+
+---
+
+### 💬 社区与支持
+
+- **GitHub Issues**: 报告Bug或功能请求
+- **GitHub Discussions**: 讨论和交流
+- **App Store评分**: 支持项目发展
+
+---
+
+### 📈 项目数据
+
+- **代码行数**: ~5,000行 Swift
+- **文件数**: ~40个Swift文件
+- **依赖**: 零第三方依赖
+- **测试覆盖**: 计划中
 
 ---
 
@@ -292,73 +391,95 @@ IV: 12字节随机（每次加密唯一）
 
 ### 📖 About
 
-ZeroNet Space is an iOS privacy protection app with promises:
+ZeroNet Space is a **fully open-source** iOS privacy protection app.
 
+**Our Promises**:
 - ✅ **Zero Network**: Code-level network blocking
 - ✅ **Zero Tracking**: No SDK, ads, analytics, or cloud backup
 - ✅ **Zero Account**: No registration, login, or data collection
-- ✅ **Local Encryption**: AES-256-GCM military-grade encryption with PBKDF2
-- ✅ **Privacy First**: Passed App Store privacy review with privacy manifest
+- ✅ **Local Encryption**: AES-256-GCM with PBKDF2 key derivation
+- ✅ **100% Open Source**: All code is public and auditable
 
 **Core Philosophy**: Your data belongs to you alone, not to be uploaded, analyzed, or tracked.
 
 ---
 
-### 🌟 Features
+### 💡 Why Open Source?
 
-#### Basic Features
-- 🔐 **Password Protection** - 6-8 digit strong password with biometric support (Face ID/Touch ID)
-- 📸 **Encrypted Media Storage** - Photos, videos, documents with AES-256-GCM encryption
-- 📁 **Folder Management** - Custom folders and tag system
-- 🎬 **Media Preview** - Fullscreen photo viewer, video player, document preview
+**Simple and honest answer**:
 
-#### Advanced Privacy (V1.2)
-- 👥 **Guest Mode** - Dual password system for temporary access
-  - Master Password (6-8 digits): Full access
-  - Guest Password (6-8 digits, numbers only): Limited access with hidden sensitive content
-  - Server-side validation: Guest password cannot match master password
-- 🔒 **Hidden Space** - Secret notes and sensitive files area
-- 🧮 **Disguise Interface** - Calculator disguise mode for privacy protection
-- 🌓 **Dark Mode** - Complete light/dark theme support
-- 🌍 **Internationalization** - Full support for English and Simplified Chinese
+> **To build trust.**
 
-#### Security Features
-- 🛡️ **App Restart Authentication** - Prevent unauthorized access
-- 🔐 **Enhanced Password Security** - PBKDF2 key derivation with 100,000 iterations
-- 🔒 **Thread Safety Protection** - @MainActor ensures safe state management
-- 🧵 **Concurrent Access Control** - NSLock protects critical operations
-- 🗑️ **Secure Deletion** - Thoroughly wipes encrypted data after file deletion
-- 💾 **Atomic Operations** - Ensures data consistency and prevents corruption
-- 🔑 **Secure Key Management** - Memory-safe key erasure to prevent leaks
+Many apps claim "zero network" and "zero tracking", but users can't verify.  
+I chose open source so anyone can inspect the code and confirm we actually deliver on our promises.
+
+**Open source is not about being free, it's about being transparent.**
+
+You can:
+- 📖 Review all source code to verify "truly no network code"
+- 🔍 Inspect encryption implementation to ensure data security
+- 🛡️ Audit privacy protection mechanisms
+- 🧪 Compile and run yourself, have complete control
+
+If you find any suspicious code, please open an issue on GitHub.
 
 ---
 
-### 🔒 Latest Security Enhancements (V1.2)
+### 🔓 Fork Policy
 
-#### Encryption Service Upgrades
-- ✅ **PBKDF2 Key Derivation**: 100,000 iterations to prevent brute force attacks
-- ✅ **Secure Random Generation**: Using CryptoKit's secure random number generator
-- ✅ **Salt Management**: Unique 16-byte random salt for each encryption
-- ✅ **IV Management**: Unique 12-byte random IV for each encryption
-- ✅ **Memory Safety**: Immediate secure erasure of keys after use
+We **welcome and allow** anyone to fork this project for modification, learning, and research.
 
-#### Keychain Service Enhancements
-- ✅ **Atomic Operations**: Ensures atomicity of password setting and verification
-- ✅ **Concurrency Protection**: NSLock prevents concurrent access conflicts
-- ✅ **Error Handling**: Comprehensive error propagation and recovery mechanisms
-- ✅ **Data Consistency**: Prevents data corruption from partial writes
+#### ✅ What You Can Do
 
-#### Authentication System Optimization
-- ✅ **State Management**: Fixed guest mode state management vulnerabilities
-- ✅ **Password Validation**: Server-side validation prevents weak password policy bypass
-- ✅ **Error Propagation**: Complete error handling chain
-- ✅ **Thread Safety**: @MainActor ensures safe UI updates
+- Fork and compile the code for personal use
+- Modify code to meet your needs
+- Learn iOS development and privacy protection techniques
+- Submit Pull Requests to improve the project
+- Create derivative projects (must comply with GPL-3.0)
+
+#### ⚠️ Only One Requirement
+
+**Please do not use the "ZeroNet Space" brand name and logo in fork versions.**
+
+**Why?**
+- Prevent user confusion between official and fork versions
+- Ensure users know which version they're using
+- Protect brand from misuse
+
+**How to comply?**
+- ✅ "XXX based on ZeroNet Space"
+- ✅ "Inspired by ZeroNet Space"
+- ❌ "ZeroNet Space Enhanced"
+- ❌ "ZeroNet Space Pro"
+
+For detailed trademark usage guidelines, see [TRADEMARK.md](TRADEMARK.md).
 
 ---
 
-### 💰 Pricing Model & In-App Purchase
+### 🏪 App Store Official Version
 
-#### App Store Version Pricing
+#### Why App Store version if open source?
+
+**Two reasons**:
+
+**1. Convenience**
+- Self-compilation requires:
+  - Download Xcode (8GB+)
+  - Learn iOS development
+  - Apple Developer account ($99/year)
+  - Re-sign every 7 days (free certificate)
+
+- App Store version:
+  - One-tap download
+  - Auto updates
+  - Official technical support
+
+**2. Sustainable Development**
+- Open source projects need ongoing maintenance
+- Paid version supports long-term development
+- Avoid adding ads or collecting data
+
+#### Pricing Model
 
 **Free Version**:
 - ✅ Full encryption features (AES-256-GCM)
@@ -368,81 +489,36 @@ ZeroNet Space is an iOS privacy protection app with promises:
 - ✅ All core security features
 - ⚠️ **File limit: Up to 75 files**
 
-**Pro Version (In-App Purchase)**:
-- 🔓 **Unlimited file storage** - Remove 75 file limit
-- 🔓 **Guest Mode** - Dual password system for privacy
-- 💰 **One-time purchase** - Lifetime access, no subscription
+**Pro Version ($2.99 one-time)**:
+- 🔓 **Unlimited file storage**
+- 🔓 **Guest Mode** (dual password system)
+- 💰 **Lifetime access, no subscription**
 
-#### Why This Model?
-
-**1. Sustainable Development**
-- Free version meets basic needs (75 files sufficient for most users)
-- Advanced users pay to support ongoing development
-- Avoid ads and data collection
-
-**2. Fair Pricing**
-- One-time purchase, no subscription
-- Clear value proposition
-- Pro features for power users
-
-**3. App Store Convenience**
-- One-tap download
-- Auto updates
-- Official support
-
-#### Feature Comparison
-
-| Feature | App Store Free | App Store Pro |
-|---------|---------------|--------------|
-| Full Encryption | ✅ | ✅ |
-| Hidden Space | ✅ | ✅ |
-| Disguise Interface | ✅ | ✅ |
-| Dark Mode | ✅ | ✅ |
-| Latest Security | ✅ | ✅ |
-| **File Count** | **Up to 75** | **Unlimited** |
-| **Guest Mode** | ❌ Requires Pro | ✅ |
-| Access Method | ✅ One-tap Download | ✅ One-tap Download |
-| Auto Updates | ✅ Auto Push | ✅ Auto Push |
-| Tech Support | ✅ Official | ✅ Priority |
-| **Price** | **Free** | **One-time IAP** |
-
-> 💡 **Regular Users**: Free version sufficient for daily use (75 files)  
-> 💡 **Advanced Users**: Pro version unlocks all features, one-time purchase for lifetime
-
-#### In-App Purchase Transparency
-
-- ✅ **No Subscription**: All IAPs are one-time purchases, lifetime access
-- ✅ **No Hidden Fees**: Clear pricing, no additional charges
-- ✅ **Complete Features**: Both free and Pro include core encryption
-- ✅ **Zero Network Promise**: IAP validation is completely local, offline
+> 💡 **Choice is yours**: Pay to support development, or compile for free yourself.
 
 ---
 
-### 🚀 Quick Start
+### 🌟 Core Features
 
-[![Download on App Store](https://developer.apple.com/app-store/marketing/guidelines/images/badge-download-on-the-app-store.svg)](https://apps.apple.com/app/zeronet-space)
+#### Basic Features
+- 🔐 **Password Protection** - 6-8 digit strong password with biometric support
+- 📸 **Encrypted Media Storage** - Photos, videos, documents with AES-256-GCM
+- 📁 **Folder Management** - Custom folders and tag system
+- 🎬 **Media Preview** - Fullscreen photo viewer, video player, document preview
 
-> Coming soon, stay tuned!
+#### Advanced Privacy (V1.2)
+- 👥 **Guest Mode** - Dual password system for temporary access
+- 🔒 **Hidden Space** - Secret notes and sensitive files area
+- 🧮 **Disguise Interface** - Calculator disguise mode
+- 🌓 **Dark Mode** - Complete light/dark theme support
+- 🌍 **Internationalization** - Full English and Simplified Chinese support
 
----
-
-### 🛠️ Tech Stack
-
-#### Core Technologies
-- **Language**: Swift 5.9
-- **UI Framework**: SwiftUI 3.0+
-- **Data Storage**: SwiftData + FileManager
-- **Encryption**: CryptoKit (AES-256-GCM)
-- **Password Management**: iOS Keychain + PBKDF2
-- **Minimum Support**: iOS 15.0+
-
-#### Architecture Features
-- ✅ MVVM architecture pattern
-- ✅ @MainActor thread safety
-- ✅ Environment object dependency injection
-- ✅ Modern Swift concurrency (async/await)
-- ✅ Atomic operations ensure data consistency
-- ✅ Concurrency control prevents race conditions
+#### Security Features
+- 🛡️ **App Restart Authentication** - Prevent unauthorized access
+- 🔐 **PBKDF2 Key Derivation** - 100,000 iterations against brute force
+- 🔒 **Thread Safety Protection** - @MainActor ensures safe state management
+- 🧵 **Concurrent Access Control** - NSLock protects critical operations
+- 🗑️ **Secure Deletion** - Thoroughly wipes encrypted data
 
 ---
 
@@ -468,18 +544,10 @@ Format: Salt(16) + IV(12) + Tag(16) + Ciphertext
 Memory Safety: Immediate key erasure after use
 ```
 
-#### Concurrency Safety
-```
-Main Thread: @MainActor protects UI state
-Atomic Operations: NSLock protects critical data
-State Management: Published properties thread-safe
-Error Handling: Complete error propagation chain
-```
-
-#### Network Isolation
+#### Network Isolation Verification
 ```
 Network Permission: ❌ Not requested
-Network Code: ❌ Does not exist
+Network Code: ❌ Does not exist (verify in source)
 Third-party SDK: ❌ Zero dependencies
 Cloud Service: ❌ Completely local
 Analytics Tracking: ❌ Zero collection
@@ -487,26 +555,105 @@ Privacy Manifest: ✅ Provided (PrivacyInfo.xcprivacy)
 ```
 
 **Verification Methods**:
-- Check `PrivacyInfo.xcprivacy` - Privacy manifest provided
-- Runtime monitoring - Use Charles/Wireshark to verify zero network traffic
+- 🔍 View source code - Search for `URLSession`, `Alamofire`, `network requests`
+- 📄 Check `PrivacyInfo.xcprivacy` - Privacy manifest file
+- 🛠️ Runtime monitoring - Use Charles/Wireshark to verify zero traffic
 
 ---
 
-### 🧪 Security Feedback
+### 🛠️ Tech Stack
+
+#### Core Technologies
+- **Language**: Swift 5.9
+- **UI Framework**: SwiftUI 3.0+
+- **Data Storage**: SwiftData + FileManager
+- **Encryption**: CryptoKit (AES-256-GCM)
+- **Password Management**: iOS Keychain + PBKDF2
+- **Minimum Support**: iOS 15.0+
+
+#### Architecture Features
+- ✅ MVVM architecture pattern
+- ✅ @MainActor thread safety
+- ✅ Environment object dependency injection
+- ✅ Modern Swift concurrency (async/await)
+- ✅ Atomic operations ensure consistency
+
+---
+
+### 🤝 Contributing
+
+We welcome community contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+#### Welcome Contribution Types
+
+✅ **Immediately Welcome**:
+- Bug fixes
+- Performance optimization
+- Security hardening
+- Internationalization/translation
+- Documentation improvements
+
+⚠️ **Need Discussion**:
+- New feature development
+- Major UI/UX changes
+- Architecture adjustments
+
+❌ **Clearly Rejected**:
+- Any network-related features
+- Removing payment limits (can modify in your fork)
+- Features violating "zero network" philosophy
+
+#### How to Contribute
+
+1. Fork this repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+### 🏆 Acknowledgments
+
+Thanks to everyone who contributes to this project!
+
+**Contributors**:
+<!-- Contributors will be automatically added here -->
+- Waiting for the first contributor...
+
+**Special Thanks**:
+- Apple CryptoKit team - Secure encryption framework
+- SwiftUI community - Modern UI development
+- All users who provided feedback and suggestions
+
+---
+
+### 🔒 Security Feedback
+
 If you find security vulnerabilities:
-- 📧 Please report via GitHub Issues privately (recommended)
-- 💬 Or contact project maintainer directly
-- 🏆 Responsible disclosure will be acknowledged in README
 
-#### Security Update History
-- **V1.2 (2025-01-17)**: Major security enhancements
-  - Fixed EncryptionService key derivation vulnerability
-  - Fixed KeychainService concurrency safety issues
-  - Fixed AuthenticationViewModel state management vulnerability
-  - Enhanced CalculatorViewModel memory safety
-  - Improved error handling and propagation mechanisms
+1. **Please do not disclose publicly** - Report privately first
+2. **Contact via**:
+   - GitHub Issues (use "Security" label)
+   - Project maintainer (see GitHub Profile)
+3. **Responsible Disclosure Rewards**:
+   - Public acknowledgment in README
+   - Display in app acknowledgments page
 
+---
 
+### 📄 License
+
+This project is licensed under **GPL-3.0** - see [LICENSE](LICENSE) file.
+
+#### GPL-3.0 Simple Explanation
+
+- ✅ Free to use, modify, and distribute
+- ✅ Can be used commercially
+- ⚠️ **Modified code must be open source**
+- ⚠️ **Derivative works must use GPL-3.0**
+
+For detailed license terms, see LICENSE file.
 
 ---
 
@@ -514,20 +661,48 @@ If you find security vulnerabilities:
 
 #### Data Security Notice
 
-- **Password Cannot Be Recovered**: We cannot reset passwords. Forgetting password requires app uninstallation (data will be lost)
-- **No Cloud Backup**: All data stored locally only. Uninstalling app or changing devices will lose data
-- **Offline Use**: Complete offline means no remote data recovery
-- **Please Remember Password**: Recommend using password manager to record
+- **Password Cannot Be Recovered** - Cannot reset password, forgetting requires app uninstallation
+- **No Cloud Backup** - All data stored locally only, uninstalling loses data
+- **Offline Use** - Complete offline means no remote data recovery
+- **Please Remember Password** - Recommend using password manager
 
 #### Privacy Promise
 
-- ✅ We will **NEVER** add network features (IAP validation is completely local)
+- ✅ We will **NEVER** add network features
 - ✅ We will **NEVER** collect user data
 - ✅ We will **NEVER** add tracking or analytics
 - ✅ We will **NEVER** add ads
-- ✅ IAPs will **ALWAYS** be one-time purchases, never subscription-based
+- ✅ **Code will always be open source, monitored by community**
 
+---
 
+### 🚀 Quick Start
+
+#### Use App Store Official Version (Recommended)
+
+[![Download on App Store](https://developer.apple.com/app-store/marketing/guidelines/images/badge-download-on-the-app-store.svg)](https://apps.apple.com/app/zeronet-space)
+
+> Coming soon, stay tuned!
+
+#### Compile Yourself (Advanced Users)
+
+```bash
+# 1. Clone repository
+git clone https://github.com/YourUsername/ZeroNetSpace.git
+cd ZeroNetSpace
+
+# 2. Open with Xcode
+open ZeroNetSpace.xcodeproj
+
+# 3. Select your development team (requires Apple ID)
+# 4. Select device or simulator
+# 5. Click run (⌘R)
+```
+
+**Note**:
+- Requires Xcode 15.0+
+- Requires macOS 13.0+ (Ventura)
+- Real device requires Apple Developer account (free or paid)
 
 ---
 
@@ -536,30 +711,57 @@ If you find security vulnerabilities:
 - **Current Version**: V1.2
 - **Development Status**: ✅ Stable maintenance
 - **Last Update**: 2025-01-17
+- **Open Source Date**: 2025-01-18
 - **Next Version**: V2.0 (planned)
-- **App Store Status**: 📋 Preparing for submission
 
 ---
 
 ### 🗺️ Roadmap
 
-#### V2.0 (Planned)
-- [ ] Optional encrypted cloud backup (user opt-in required)
-- [ ] Password recovery mechanism (based on local security questions)
-- [ ] More file format support
-- [ ] Batch operation optimization
-- [ ] Performance optimization and memory management improvements
+#### V1.2 ✅ Completed (2025-01-17)
+- ✅ Guest Mode (dual password system)
+- ✅ Hidden Space
+- ✅ Disguise Interface
+- ✅ PBKDF2 key derivation
+- ✅ Major security enhancements
 
-#### Long-term Planning
-- [ ] iPad adaptation
+#### V2.0 🚧 Planned
+- [ ] Folder secondary password
+- [ ] Self-destruct lock (multiple wrong passwords)
+- [ ] Private notes (Markdown support)
+- [ ] Encrypted file search
+- [ ] Performance optimization
+
+#### V3.0 💡 Long-term
+- [ ] iPad support
 - [ ] macOS version
 - [ ] More language support
-- [ ] Plugin system
+- [ ] Offline password manager
+- [ ] Offline document wallet
+
+---
+
+### 💬 Community & Support
+
+- **GitHub Issues**: Report bugs or feature requests
+- **GitHub Discussions**: Discuss and communicate
+- **App Store Rating**: Support project development
+
+---
+
+### 📈 Project Stats
+
+- **Lines of Code**: ~5,000 lines Swift
+- **Files**: ~40 Swift files
+- **Dependencies**: Zero third-party
+- **Test Coverage**: Planned
 
 ---
 
 <div align="center">
 
 **Made with ❤️ for Privacy**
+
+**Open Source · Transparent · Trustworthy**
 
 </div>
