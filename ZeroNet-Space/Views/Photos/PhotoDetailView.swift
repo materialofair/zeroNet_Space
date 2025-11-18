@@ -88,20 +88,20 @@ struct PhotoDetailView: View {
                 showControls.toggle()
             }
         }
-        .alert("确认删除", isPresented: $showDeleteAlert) {
-            Button("取消", role: .cancel) {}
-            Button("删除", role: .destructive) {
+        .alert(String(localized: "photo.delete.confirmTitle"), isPresented: $showDeleteAlert) {
+            Button(String(localized: "common.cancel"), role: .cancel) {}
+            Button(String(localized: "common.delete"), role: .destructive) {
                 Task {
                     await deletePhoto()
                 }
             }
         } message: {
-            Text("确定要删除这张照片吗？此操作无法撤销。")
+            Text(String(localized: "photo.delete.confirmMessage"))
         }
-        .alert("导出失败", isPresented: $showExportError) {
-            Button("确定", role: .cancel) {}
+        .alert(String(localized: "export.failed"), isPresented: $showExportError) {
+            Button(String(localized: "common.ok"), role: .cancel) {}
         } message: {
-            Text(exportError ?? "未知错误")
+            Text(exportError ?? String(localized: "common.unknownError"))
         }
         .sheet(
             isPresented: $showShareSheet,
@@ -239,7 +239,7 @@ struct PhotoDetailView: View {
         guard !isExporting else { return }
 
         guard let password = authViewModel.sessionPassword, !password.isEmpty else {
-            exportError = "当前会话无有效密码，请重新登录后再试。"
+            exportError = String(localized: "photo.error.noPassword")
             showExportError = true
             return
         }

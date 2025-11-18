@@ -287,7 +287,10 @@ struct FilePreviewView: View {
                     throw NSError(
                         domain: "FilePreviewView",
                         code: -1,
-                        userInfo: [NSLocalizedDescriptionKey: "无法解析文本内容"]
+                        userInfo: [
+                            NSLocalizedDescriptionKey: String(
+                                localized: "filePreview.error.parseText")
+                        ]
                     )
                 }
 
@@ -297,7 +300,9 @@ struct FilePreviewView: View {
                 }
             } catch {
                 await MainActor.run {
-                    self.loadError = "解密失败：\(error.localizedDescription)"
+                    self.loadError = String(
+                        format: String(localized: "filePreview.error.decryptFailed"),
+                        error.localizedDescription)
                     self.isLoading = false
                     self.showAlert = true
                 }

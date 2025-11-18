@@ -21,15 +21,15 @@ enum ExportError: Error {
     var localizedDescription: String {
         switch self {
         case .noItemsSelected:
-            return "请至少选择一个文件"
+            return String(localized: "exportError.noSelection")
         case .decryptionFailed:
-            return "文件解密失败"
+            return AppConstants.ErrorMessages.decryptionFailed
         case .exportFailed:
-            return "导出失败"
+            return String(localized: "export.failed")
         case .invalidPassword:
-            return "密码错误"
+            return AppConstants.ErrorMessages.passwordIncorrect
         case .tempDirectoryError:
-            return "临时目录创建失败"
+            return String(localized: "exportError.tempDirectory")
         }
     }
 }

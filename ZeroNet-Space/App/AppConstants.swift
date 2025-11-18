@@ -13,7 +13,7 @@ enum AppConstants {
     // MARK: - App Info
 
     /// 应用名称
-    static let appName = "零网络空间"
+    static let appName = String(localized: "app.name")
 
     /// 应用版本
     static let appVersion = "1.0"
@@ -144,23 +144,38 @@ extension AppConstants {
 
     /// 错误消息
     enum ErrorMessages {
-        static let passwordTooShort = "密码至少需要\(minPasswordLength)位字符"
-        static let passwordTooLong = "密码不能超过\(maxPasswordLength)位字符"
-        static let passwordMismatch = "两次输入的密码不一致"
-        static let passwordIncorrect = "密码错误，请重试"
-        static let passwordEmpty = "请输入密码"
+        static var passwordTooShort: String {
+            String(
+                format: String(localized: "error.passwordTooShort"),
+                AppConstants.minPasswordLength)
+        }
 
-        static let encryptionFailed = "加密失败"
-        static let decryptionFailed = "解密失败"
-        static let fileNotFound = "文件不存在"
-        static let fileTooLarge = "文件过大（最大500MB）"
-        static let storageInsufficient = "存储空间不足"
+        static var passwordTooLong: String {
+            String(
+                format: String(localized: "error.passwordTooLong"),
+                AppConstants.maxPasswordLength)
+        }
 
-        static let importFailed = "导入失败"
-        static let deleteFailed = "删除失败"
-        static let saveFailed = "保存失败"
+        static let passwordMismatch = String(localized: "error.passwordMismatch")
+        static let passwordIncorrect = String(localized: "error.passwordIncorrect")
+        static let passwordEmpty = String(localized: "error.passwordEmpty")
 
-        static let permissionDenied = "权限被拒绝"
-        static let photoLibraryAccessDenied = "请在设置中允许访问相册"
+        static let encryptionFailed = String(localized: "error.encryptionFailed")
+        static let decryptionFailed = String(localized: "error.decryptionFailed")
+        static let fileNotFound = String(localized: "error.fileNotFound")
+        static var fileTooLarge: String {
+            String(
+                format: String(localized: "error.fileTooLarge"),
+                AppConstants.maxFileSize / (1024 * 1024))
+        }
+        static let storageInsufficient = String(localized: "error.storageInsufficient")
+
+        static let importFailed = String(localized: "error.importFailed")
+        static let deleteFailed = String(localized: "error.deleteFailed")
+        static let saveFailed = String(localized: "error.saveFailed")
+
+        static let permissionDenied = String(localized: "error.permissionDenied")
+        static let photoLibraryAccessDenied = String(
+            localized: "error.photoLibraryAccessDenied")
     }
 }

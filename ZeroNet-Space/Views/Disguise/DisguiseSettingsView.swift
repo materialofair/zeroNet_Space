@@ -139,7 +139,7 @@ struct DisguiseSettingsView: View {
                 hasDisguisePassword = keychainService.isDisguisePasswordSet()
             })
         }
-        .alert("启用伪装模式", isPresented: $showDisguiseWarning) {
+        .alert(String(localized: "disguise.enable.title"), isPresented: $showDisguiseWarning) {
             Button(String(localized: "common.continue")) {
                 showPasswordInput = true
             }
@@ -147,13 +147,13 @@ struct DisguiseSettingsView: View {
                 disguiseModeEnabled = false
             }
         } message: {
-            Text("启用伪装模式后，应用将以计算器界面启动。请设置一个密码序列用于解锁应用。")
+            Text(String(localized: "disguise.enable.message"))
         }
         .alert(String(localized: "disguise.changePassword.required.title"), isPresented: $showPasswordChangeRequired) {
             Button(String(localized: "disguise.changePassword.action")) {
                 showPasswordInput = true
             }
-            Button("取消", role: .cancel) {
+            Button(String(localized: "common.cancel"), role: .cancel) {
                 disguiseModeEnabled = false
             }
         } message: {
@@ -291,7 +291,7 @@ struct PasswordSequenceInputView: View {
                     .disabled(isReencrypting)
                 }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") {
+                    Button(String(localized: "common.cancel")) {
                         dismiss()
                     }
                     .disabled(isReencrypting)
@@ -301,7 +301,7 @@ struct PasswordSequenceInputView: View {
                 Button(String(localized: "disguise.confirmChange.continue"), role: .destructive) {
                     performPasswordChange()
                 }
-                Button("取消", role: .cancel) {
+                Button(String(localized: "common.cancel"), role: .cancel) {
                     // 不做任何操作
                 }
             } message: {
@@ -371,7 +371,9 @@ struct PasswordSequenceInputView: View {
                 dismiss()
                 print("✅ 伪装模式密码已设置: \(inputText)")
             } catch {
-                errorMessage = "保存失败: \(error.localizedDescription)"
+                errorMessage = String(
+                    format: String(localized: "disguise.error.saveFailed"),
+                    error.localizedDescription)
                 print("❌ 保存伪装密码失败: \(error)")
             }
         }
@@ -401,7 +403,9 @@ struct PasswordSequenceInputView: View {
 
             } catch {
                 await MainActor.run {
-                    errorMessage = "密码修改失败: \(error.localizedDescription)"
+                    errorMessage = String(
+                        format: String(localized: "disguise.error.updateFailed"),
+                        error.localizedDescription)
                     isReencrypting = false
                     print("❌ 密码修改失败: \(error)")
                 }

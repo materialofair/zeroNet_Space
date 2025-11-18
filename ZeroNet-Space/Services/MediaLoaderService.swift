@@ -102,11 +102,11 @@ enum MediaLoaderError: Error {
     var localizedDescription: String {
         switch self {
         case .invalidImageData:
-            return "无效的图片数据"
+            return String(localized: "mediaLoader.error.invalidImageData")
         case .fileNotFound:
-            return "文件不存在"
+            return AppConstants.ErrorMessages.fileNotFound
         case .decryptionFailed:
-            return "解密失败"
+            return AppConstants.ErrorMessages.decryptionFailed
         }
     }
 }

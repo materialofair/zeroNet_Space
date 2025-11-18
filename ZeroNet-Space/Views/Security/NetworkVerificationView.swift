@@ -378,8 +378,8 @@ struct NetworkVerificationView: View {
 
                         FlowStep(
                             number: 2,
-                            title: "本地读取",
-                            description: "读取文件到内存 (仅在本地)",
+                            title: String(localized: "network.dataFlow.readLocal"),
+                            description: String(localized: "network.dataFlow.readLocal.description"),
                             icon: "arrow.down.circle"
                         )
 

@@ -39,7 +39,7 @@ final class SecretNote {
     // MARK: - Initialization
 
     init(
-        title: String = "无标题笔记",
+        title: String = String(localized: "secretNote.defaultTitle"),
         content: String = "",
         isFavorite: Bool = false,
         tags: [String] = []
@@ -60,7 +60,7 @@ final class SecretNote {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
-        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.locale = .autoupdatingCurrent
         return formatter.string(from: createdAt)
     }
 
@@ -69,7 +69,7 @@ final class SecretNote {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
-        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.locale = .autoupdatingCurrent
         return formatter.string(from: modifiedAt)
     }
 
@@ -77,7 +77,7 @@ final class SecretNote {
     var preview: String {
         let cleanContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
         if cleanContent.isEmpty {
-            return "空笔记"
+            return String(localized: "secretNote.empty")
         }
         return String(cleanContent.prefix(100))
     }

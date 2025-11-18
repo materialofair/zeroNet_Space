@@ -31,7 +31,7 @@ struct VideoPlayerView: View {
     @State private var tempVideoURL: URL?
     @State private var showDeleteConfirmation: Bool = false
     @State private var isDecrypting: Bool = false
-    @State private var decryptMessage: String = "正在加载..."
+    @State private var decryptMessage: String = String(localized: "video.loading")
     @State private var isSharing: Bool = false
     @State private var exportedURLs: [URL] = []
     @State private var showShareSheet = false
@@ -72,7 +72,7 @@ struct VideoPlayerView: View {
                         .font(.system(size: 60))
                         .foregroundColor(.orange)
 
-                    Text("视频加载失败")
+                    Text(String(localized: "video.error.loadFailed"))
                         .font(.title2)
                         .foregroundColor(.white)
 
@@ -100,12 +100,15 @@ struct VideoPlayerView: View {
             .animation(.easeInOut(duration: 0.2), value: showControls)
         }
         .statusBar(hidden: !showControls)
-        .confirmationDialog("删除视频", isPresented: $showDeleteConfirmation) {
-            Button("删除", role: .destructive) {
+        .confirmationDialog(
+            String(localized: "video.delete.confirmTitle"),
+            isPresented: $showDeleteConfirmation
+        ) {
+            Button(String(localized: "common.delete"), role: .destructive) {
                 deleteVideo()
             }
         } message: {
-            Text("确定要删除此视频吗？此操作无法撤销。")
+            Text(String(localized: "video.delete.confirmMessage"))
         }
         .onAppear {
             setupPlayer()
@@ -126,14 +129,14 @@ struct VideoPlayerView: View {
         ) {
             ShareSheet(items: exportedURLs)
         }
-        .alert("导出失败", isPresented: $showShareAlert) {
-            Button("确定", role: .cancel) {}
+        .alert(String(localized: "export.failed"), isPresented: $showShareAlert) {
+            Button(String(localized: "common.ok"), role: .cancel) {}
         } message: {
-            Text(shareError ?? "未知错误")
+            Text(shareError ?? String(localized: "common.unknownError"))
         }
         .loadingOverlay(
             isShowing: isDecrypting || isSharing,
-            message: isDecrypting ? decryptMessage : "正在导出视频..."
+            message: isDecrypting ? decryptMessage : String(localized: "video.export.inProgress")
         )
     }
 
@@ -201,11 +204,11 @@ struct VideoPlayerView: View {
 
     private func setupPlayer() {
         guard let password = authViewModel.sessionPassword else {
-            errorMessage = "无法获取密码，请重新登录"
+            errorMessage = String(localized: "video.error.passwordMissing")
             return
         }
 
-        decryptMessage = "正在解密视频，文件较大可能需要几秒"
+        decryptMessage = String(localized: "video.decrypt.status")
         isDecrypting = true
 
         // 异步解密并创建播放器
@@ -246,7 +249,9 @@ struct VideoPlayerView: View {
 
             } catch {
                 await MainActor.run {
-                    errorMessage = "视频解密失败: \(error.localizedDescription)"
+                    errorMessage = String(
+                        format: String(localized: "video.error.decryptFailed"),
+                        error.localizedDescription)
                     isDecrypting = false
                 }
             }
@@ -256,7 +261,7 @@ struct VideoPlayerView: View {
     private func shareVideo() {
         guard !isSharing else { return }
         guard let password = authViewModel.sessionPassword, !password.isEmpty else {
-            shareError = "无法获取密码，请重新登录后再试。"
+            shareError = String(localized: "video.error.passwordMissing")
             showShareAlert = true
             return
         }

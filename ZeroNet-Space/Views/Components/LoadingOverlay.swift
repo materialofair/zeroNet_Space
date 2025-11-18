@@ -107,16 +107,16 @@ extension View {
 
 // MARK: - Preview
 
-#Preview("不确定进度") {
+#Preview("Indeterminate Progress") {
     VStack {
-        Text("内容区域")
+        Text("Content Area")
     }
     .loadingOverlay(isShowing: true, message: String(localized: "common.processing"))
 }
 
-#Preview("确定进度") {
+#Preview("Determinate Progress") {
     VStack {
-        Text("内容区域")
+        Text("Content Area")
     }
     .loadingOverlay(
         isShowing: true, message: String(localized: "common.importing.photos"), progress: 0.65)

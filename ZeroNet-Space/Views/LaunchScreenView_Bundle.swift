@@ -69,11 +69,11 @@ struct FallbackLaunchView: View {
 
                 // 文本
                 VStack(spacing: 12) {
-                    Text("Open Source · Zero Network")
+                    Text(String(localized: "launch.subtitle.opensource"))
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(.white.opacity(0.9))
 
-                    Text("Privacy First")
+                    Text(String(localized: "launch.subtitle.privacyFirst"))
                         .font(.system(size: 18, weight: .medium))
                         .foregroundColor(.white.opacity(0.9))
                 }

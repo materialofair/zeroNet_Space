@@ -219,11 +219,16 @@ enum ReencryptionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .alreadyInProgress:
-            return "重新加密任务已在进行中"
+            return String(localized: "reencryptionError.inProgress")
         case .fileNotFound(let path):
-            return "文件不存在: \(path)"
+            return String(
+                format: String(localized: "reencryptionError.fileNotFound"),
+                path)
         case .fileReencryptionFailed(let fileName, let error):
-            return "文件重新加密失败: \(fileName) - \(error.localizedDescription)"
+            return String(
+                format: String(localized: "reencryptionError.fileFailed"),
+                fileName,
+                error.localizedDescription)
         }
     }
 }

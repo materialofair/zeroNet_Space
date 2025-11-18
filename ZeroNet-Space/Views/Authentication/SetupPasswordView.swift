@@ -76,11 +76,11 @@ struct SetupPasswordView: View {
                 .padding(.top, 40)
 
             VStack(spacing: 8) {
-                Text("设置密码")
+                Text(String(localized: "setup.header.title"))
                     .font(.largeTitle)
                     .fontWeight(.bold)
 
-                Text("创建一个密码来保护您的零网络空间")
+                Text(String(localized: "setup.header.subtitle"))
                     .font(.subheadline)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -94,7 +94,10 @@ struct SetupPasswordView: View {
             // 密码输入
             VStack(alignment: .leading, spacing: 8) {
                 if viewModel.showPassword {
-                    TextField("输入密码", text: $viewModel.password)
+                    TextField(
+                        String(localized: "setup.passwordPlaceholder"),
+                        text: $viewModel.password
+                    )
                         .textFieldStyle(.roundedBorder)
                         .textContentType(.newPassword)
                         .focused($focusedField, equals: .password)
@@ -103,7 +106,10 @@ struct SetupPasswordView: View {
                             focusedField = .confirmPassword
                         }
                 } else {
-                    SecureField("输入密码", text: $viewModel.password)
+                    SecureField(
+                        String(localized: "setup.passwordPlaceholder"),
+                        text: $viewModel.password
+                    )
                         .textFieldStyle(.roundedBorder)
                         .textContentType(.newPassword)
                         .focused($focusedField, equals: .password)
@@ -133,7 +139,10 @@ struct SetupPasswordView: View {
             // 确认密码输入
             VStack(alignment: .leading, spacing: 8) {
                 if viewModel.showPassword {
-                    TextField("再次输入密码", text: $viewModel.confirmPassword)
+                    TextField(
+                        String(localized: "setup.confirmPasswordPlaceholder"),
+                        text: $viewModel.confirmPassword
+                    )
                         .textFieldStyle(.roundedBorder)
                         .textContentType(.newPassword)
                         .focused($focusedField, equals: .confirmPassword)
@@ -144,7 +153,10 @@ struct SetupPasswordView: View {
                             }
                         }
                 } else {
-                    SecureField("再次输入密码", text: $viewModel.confirmPassword)
+                    SecureField(
+                        String(localized: "setup.confirmPasswordPlaceholder"),
+                        text: $viewModel.confirmPassword
+                    )
                         .textFieldStyle(.roundedBorder)
                         .textContentType(.newPassword)
                         .focused($focusedField, equals: .confirmPassword)
@@ -226,7 +238,7 @@ struct SetupPasswordView: View {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 } else {
-                    Text("完成设置")
+                    Text(String(localized: "setup.finish"))
                         .fontWeight(.semibold)
                 }
             }

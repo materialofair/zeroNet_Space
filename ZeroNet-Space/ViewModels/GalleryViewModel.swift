@@ -107,7 +107,9 @@ class GalleryViewModel: ObservableObject {
                 print("🗑️ 媒体项已删除: \(item.fileName)")
 
             } catch {
-                errorMessage = "删除失败: \(error.localizedDescription)"
+                errorMessage = String(
+                    format: String(localized: "gallery.error.deleteFailed"),
+                    error.localizedDescription)
                 print("❌ 删除失败: \(error)")
             }
 

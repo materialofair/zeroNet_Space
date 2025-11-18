@@ -217,6 +217,6 @@ struct GuestModeSetupView: View {
 
 #Preview {
     GuestModeSetupView(onComplete: {
-        print("访客密码设置完成")
+        print("Guest password setup complete")
     })
 }

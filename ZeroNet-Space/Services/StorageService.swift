@@ -240,11 +240,11 @@ enum StorageError: Error {
     var localizedDescription: String {
         switch self {
         case .cacheDirectoryNotFound:
-            return "缓存目录未找到"
+            return String(localized: "storage.error.cacheNotFound")
         case .clearCacheFailed:
-            return "清理缓存失败"
+            return String(localized: "storage.error.clearCacheFailed")
         case .clearTempFailed:
-            return "清理临时文件失败"
+            return String(localized: "storage.error.clearTempFailed")
         }
     }
 }

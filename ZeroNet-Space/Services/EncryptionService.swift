@@ -27,35 +27,48 @@ enum EncryptionError: Error {
     var localizedDescription: String {
         switch self {
         case .invalidPassword:
-            return "密码无效"
+            return String(localized: "encryptionError.invalidPassword")
         case .encryptionFailed(let error):
             if let error = error {
-                return "加密失败: \(error.localizedDescription)"
+                return String(
+                    format: String(localized: "encryptionError.encryptFailedWithReason"),
+                    error.localizedDescription)
             }
-            return "加密失败"
+            return String(localized: "encryptionError.encryptFailed")
         case .decryptionFailed(let error):
             if let error = error {
-                return "解密失败: \(error.localizedDescription)"
+                return String(
+                    format: String(localized: "encryptionError.decryptFailedWithReason"),
+                    error.localizedDescription)
             }
-            return "解密失败"
+            return String(localized: "encryptionError.decryptFailed")
         case .invalidData:
-            return "数据格式无效"
+            return String(localized: "encryptionError.invalidData")
         case .keyDerivationFailed:
-            return "密钥派生失败"
+            return String(localized: "encryptionError.keyDerivationFailed")
         case .dataCorrupted:
-            return "数据已损坏或被篡改"
+            return String(localized: "encryptionError.dataCorrupted")
         case .fileTooLarge(let size, let limit):
             let sizeMB = Double(size) / (1024 * 1024)
             let limitMB = Double(limit) / (1024 * 1024)
-            return String(format: "文件过大 (%.1fMB，限制%.1fMB)", sizeMB, limitMB)
+            return String(
+                format: String(localized: "encryptionError.fileTooLargeDetail"),
+                sizeMB,
+                limitMB)
         case .fileNotFound(let path):
-            return "文件不存在: \(path)"
+            return String(
+                format: String(localized: "encryptionError.fileNotFound"),
+                path)
         case .fileAccessDenied(let path):
-            return "无权访问文件: \(path)"
+            return String(
+                format: String(localized: "encryptionError.accessDenied"),
+                path)
         case .insufficientStorage:
-            return "存储空间不足"
+            return String(localized: "encryptionError.storageInsufficient")
         case .ioError(let error):
-            return "IO错误: \(error.localizedDescription)"
+            return String(
+                format: String(localized: "encryptionError.ioError"),
+                error.localizedDescription)
         }
     }
 }

@@ -152,7 +152,9 @@ class ImportViewModel: ObservableObject {
                 print("✅ 导入完成: \(items.count) 个媒体文件")
 
             } catch {
-                errorMessage = "导入失败: \(error.localizedDescription)"
+                errorMessage = String(
+                    format: String(localized: "import.error.failedWithReason"),
+                    error.localizedDescription)
                 importProgress = nil
                 isImporting = false
                 print("❌ 导入失败: \(error)")
@@ -205,7 +207,9 @@ class ImportViewModel: ObservableObject {
                 print("✅ 导入完成: \(items.count) 个文件")
 
             } catch {
-                errorMessage = "导入失败: \(error.localizedDescription)"
+                errorMessage = String(
+                    format: String(localized: "import.error.failedWithReason"),
+                    error.localizedDescription)
                 importProgress = nil
                 isImporting = false
                 print("❌ 导入失败: \(error)")
@@ -245,9 +249,13 @@ extension ImportViewModel {
     /// 格式化的进度文本
     var progressText: String {
         guard let progress = importProgress else {
-            return isImporting ? "正在准备导入..." : ""
+            return isImporting ? String(localized: "import.status.preparing") : ""
         }
-        return "正在导入 \(progress.current)/\(progress.total): \(progress.currentFileName)"
+        return String(
+            format: String(localized: "import.status.progress"),
+            progress.current,
+            progress.total,
+            progress.currentFileName)
     }
 
     /// 进度百分比

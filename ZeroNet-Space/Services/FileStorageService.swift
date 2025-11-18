@@ -21,19 +21,19 @@ enum FileStorageError: Error {
     var localizedDescription: String {
         switch self {
         case .directoryCreationFailed:
-            return "创建存储目录失败"
+            return String(localized: "fileStorage.error.directoryCreation")
         case .fileNotFound:
-            return "文件不存在"
+            return AppConstants.ErrorMessages.fileNotFound
         case .fileSaveFailed:
-            return "文件保存失败"
+            return String(localized: "fileStorage.error.fileSave")
         case .fileDeleteFailed:
-            return "文件删除失败"
+            return String(localized: "fileStorage.error.fileDelete")
         case .insufficientStorage:
-            return "存储空间不足"
+            return AppConstants.ErrorMessages.storageInsufficient
         case .fileTooLarge:
-            return "文件过大（最大500MB）"
+            return AppConstants.ErrorMessages.fileTooLarge
         case .invalidPath:
-            return "文件路径无效"
+            return String(localized: "fileStorage.error.invalidPath")
         }
     }
 }

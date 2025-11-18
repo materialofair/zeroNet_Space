@@ -21,13 +21,15 @@ enum KeychainError: Error {
     var localizedDescription: String {
         switch self {
         case .duplicateItem:
-            return "密码已存在"
+            return String(localized: "keychain.error.duplicateItem")
         case .itemNotFound:
-            return "未找到密码"
+            return String(localized: "keychain.error.itemNotFound")
         case .invalidData:
-            return "数据格式无效"
+            return String(localized: "keychain.error.invalidData")
         case .unexpectedStatus(let status):
-            return "Keychain错误: \(status)"
+            return String(
+                format: String(localized: "keychain.error.status"),
+                status)
         }
     }
 }
@@ -329,19 +331,19 @@ extension KeychainService {
     /// - Returns: (是否有效, 错误信息)
     static func validateGuestPassword(_ password: String) -> (isValid: Bool, message: String?) {
         if password.isEmpty {
-            return (false, "访客密码不能为空")
+            return (false, String(localized: "guestPassword.error.empty"))
         }
 
         if !password.allSatisfy({ $0.isNumber }) {
-            return (false, "访客密码必须是纯数字")
+            return (false, String(localized: "guestPassword.error.numeric"))
         }
 
         if password.count < 6 {
-            return (false, "访客密码至少需要6位数字")
+            return (false, String(localized: "guestPassword.error.minLength"))
         }
 
         if password.count > 8 {
-            return (false, "访客密码不能超过8位数字")
+            return (false, String(localized: "guestPassword.error.maxLength"))
         }
 
         return (true, nil)
@@ -357,15 +359,15 @@ extension KeychainService {
     /// - Returns: (是否有效, 错误信息)
     static func validatePasswordStrength(_ password: String) -> (isValid: Bool, message: String?) {
         if password.isEmpty {
-            return (false, "密码不能为空")
+            return (false, AppConstants.ErrorMessages.passwordEmpty)
         }
 
         if password.count < 6 {
-            return (false, "密码至少需要6位字符")
+            return (false, AppConstants.ErrorMessages.passwordTooShort)
         }
 
         if password.count > 128 {
-            return (false, "密码不能超过128位字符")
+            return (false, AppConstants.ErrorMessages.passwordTooLong)
         }
 
         return (true, nil)

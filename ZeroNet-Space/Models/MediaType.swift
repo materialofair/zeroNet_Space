@@ -22,11 +22,11 @@ enum MediaType: String, Codable, CaseIterable {
     var displayName: String {
         switch self {
         case .photo:
-            return "照片"
+            return String(localized: "mediaType.photo")
         case .video:
-            return "视频"
+            return String(localized: "mediaType.video")
         case .document:
-            return "文档"
+            return String(localized: "mediaType.document")
         }
     }
 

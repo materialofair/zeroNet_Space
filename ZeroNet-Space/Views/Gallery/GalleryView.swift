@@ -280,7 +280,8 @@ struct GalleryView: View {
         }) {
             Text(
                 viewModel.selectedItemIDs.count == mediaItems.count
-                    ? String(localized: "export.deselectAll") : "全选")
+                    ? String(localized: "export.deselectAll")
+                    : String(localized: "common.selectAll"))
         }
     }
 

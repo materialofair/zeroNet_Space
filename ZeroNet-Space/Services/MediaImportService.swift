@@ -24,17 +24,17 @@ enum ImportError: Error {
     var localizedDescription: String {
         switch self {
         case .loadFailed:
-            return "加载媒体失败"
+            return String(localized: "importError.loadFailed")
         case .unsupportedType:
-            return "不支持的文件类型"
+            return String(localized: "importError.unsupportedType")
         case .encryptionFailed:
-            return "加密失败"
+            return AppConstants.ErrorMessages.encryptionFailed
         case .saveFailed:
-            return "保存失败"
+            return AppConstants.ErrorMessages.saveFailed
         case .cancelled:
-            return "操作已取消"
+            return String(localized: "importError.cancelled")
         case .permissionDenied:
-            return "权限被拒绝"
+            return AppConstants.ErrorMessages.permissionDenied
         }
     }
 }

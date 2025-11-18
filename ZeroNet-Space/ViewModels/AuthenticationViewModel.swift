@@ -129,13 +129,13 @@ final class AuthenticationViewModel: ObservableObject {
             } catch {
                 print("❌ 获取数据密码失败: \(error)")
                 isAuthenticated = false
-                errorMessage = "解锁失败，请使用主密码登录"
+                errorMessage = String(localized: "auth.error.disguiseUnlockFailed")
             }
         } else {
             // 密码不匹配，说明伪装密码与主密码不一致
             print("⚠️ 伪装密码与主密码不一致，需要重新登录")
             isAuthenticated = false
-            errorMessage = "伪装密码与主密码不一致，请使用主密码登录"
+            errorMessage = String(localized: "auth.error.disguiseMismatch")
         }
     }
 
@@ -163,7 +163,7 @@ final class AuthenticationViewModel: ObservableObject {
 
         // 检查密码匹配
         guard password == confirmPassword else {
-            errorMessage = "两次输入的密码不一致"
+            errorMessage = AppConstants.ErrorMessages.passwordMismatch
             return
         }
 
@@ -183,7 +183,9 @@ final class AuthenticationViewModel: ObservableObject {
 
                 print("✅ 密码设置成功")
             } catch {
-                errorMessage = "保存密码失败: \(error.localizedDescription)"
+                errorMessage = String(
+                    format: String(localized: "auth.error.savePasswordFailed"),
+                    error.localizedDescription)
                 print("❌ 密码设置失败: \(error)")
             }
 
@@ -207,16 +209,21 @@ final class AuthenticationViewModel: ObservableObject {
             let minutes = remaining / 60
             let seconds = remaining % 60
             if minutes > 0 {
-                errorMessage = String(format: "尝试次数过多，请在 %d 分 %d 秒后重试", minutes, seconds)
+                errorMessage = String(
+                    format: String(localized: "auth.error.tooManyAttemptsMinutes"),
+                    minutes,
+                    seconds)
             } else {
-                errorMessage = String(format: "尝试次数过多，请在 %d 秒后重试", seconds)
+                errorMessage = String(
+                    format: String(localized: "auth.error.tooManyAttemptsSeconds"),
+                    seconds)
             }
             return
         }
 
         // 检查密码非空
         guard !password.isEmpty else {
-            errorMessage = "请输入密码"
+            errorMessage = AppConstants.ErrorMessages.passwordEmpty
             return
         }
 
@@ -265,7 +272,7 @@ final class AuthenticationViewModel: ObservableObject {
                     clearFields()
                     print("✅ 登录成功（主人模式）")
                 } catch {
-                    errorMessage = "无法读取加密密钥"
+                    errorMessage = String(localized: "auth.error.loadKeyFailed")
                     print("❌ 登录失败：\(error)")
                 }
             } else if guestMatch {
@@ -291,11 +298,15 @@ final class AuthenticationViewModel: ObservableObject {
                 // 检查是否需要锁定
                 if failedAttempts >= maxAttempts {
                     lockoutUntil = Date().addingTimeInterval(lockoutDuration)
-                    errorMessage = String(format: "密码错误次数过多，已锁定 %d 分钟", Int(lockoutDuration / 60))
+                    errorMessage = String(
+                        format: String(localized: "auth.error.lockedMinutes"),
+                        Int(lockoutDuration / 60))
                     print("🔒 账户已锁定 \(Int(lockoutDuration / 60)) 分钟")
                 } else {
                     let remaining = maxAttempts - failedAttempts
-                    errorMessage = String(format: "密码错误，还可尝试 %d 次", remaining)
+                    errorMessage = String(
+                        format: String(localized: "auth.error.remainingAttempts"),
+                        remaining)
                     print("❌ 登录失败：密码错误（剩余尝试次数：\(remaining)）")
                 }
             }
@@ -387,9 +398,9 @@ extension AuthenticationViewModel {
 
         var text: String {
             switch self {
-            case .weak: return "弱"
-            case .medium: return "中等"
-            case .strong: return "强"
+            case .weak: return String(localized: "passwordStrength.weak")
+            case .medium: return String(localized: "passwordStrength.medium")
+            case .strong: return String(localized: "passwordStrength.strong")
             }
         }
     }

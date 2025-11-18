@@ -94,7 +94,8 @@ struct BatchExportView: View {
                 } label: {
                     Text(
                         selectedItems.count == allItems.count
-                            ? String(localized: "export.deselectAll") : "全选"
+                            ? String(localized: "export.deselectAll")
+                            : String(localized: "common.selectAll")
                     )
                     .font(.subheadline)
                 }
@@ -204,7 +205,13 @@ struct BatchExportView: View {
         isExporting = true
         exportTotalCount = itemsToExport.count
         exportedCount = 0
-        exportStatusText = exportTotalCount > 0 ? "正在解密第 1/\(exportTotalCount) 个文件" : ""
+        exportStatusText =
+            exportTotalCount > 0
+            ? String(
+                format: String(localized: "export.decryptingProgress"),
+                1,
+                exportTotalCount)
+            : ""
 
         // 获取当前密码
         guard let password = authViewModel.sessionPassword else {
@@ -222,7 +229,10 @@ struct BatchExportView: View {
                 DispatchQueue.main.async {
                     self.exportedCount = processed
                     if processed < total {
-                        self.exportStatusText = "正在解密第 \(processed + 1)/\(total) 个文件"
+                        self.exportStatusText = String(
+                            format: String(localized: "export.decryptingProgress"),
+                            processed + 1,
+                            total)
                     } else {
                         self.exportStatusText = String(localized: "export.preparingShare")
                     }
