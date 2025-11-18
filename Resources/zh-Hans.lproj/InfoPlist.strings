@@ -1,0 +1,13 @@
+/*
+  InfoPlist.strings
+  ZeroNet-Space (Simplified Chinese)
+
+  Created by Claude on 2025-11-16.
+
+*/
+
+/* App name displayed on home screen */
+"CFBundleDisplayName" = "ZeroNet空间";
+
+/* App name in Settings and other system locations */
+"CFBundleName" = "ZeroNet空间";

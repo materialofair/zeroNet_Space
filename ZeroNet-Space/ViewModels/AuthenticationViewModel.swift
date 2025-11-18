@@ -1,0 +1,414 @@
+//
+//  AuthenticationViewModel.swift
+//  ZeroNet-Space
+//
+//  认证逻辑视图模型
+//  管理登录、设置密码、认证状态
+//
+
+internal import Combine
+import Foundation
+import SwiftUI
+
+/// 认证视图模型
+@MainActor
+final class AuthenticationViewModel: ObservableObject {
+
+    // MARK: - Published Properties
+
+    /// 是否已认证
+    @Published var isAuthenticated: Bool = false
+
+    /// 是否已设置密码
+    @Published var isPasswordSet: Bool = false
+
+    /// 当前输入的密码
+    @Published var password: String = ""
+
+    /// 确认密码（设置时使用）
+    @Published var confirmPassword: String = ""
+
+    /// 错误消息
+    @Published var errorMessage: String?
+
+    /// 是否正在处理
+    @Published var isProcessing: Bool = false
+
+    /// 是否显示密码
+    @Published var showPassword: Bool = false
+
+    /// 加密用密码（Data格式，支持安全清理）
+    @Published private(set) var sessionPasswordData: Data? {
+        willSet {
+            // 零化旧密码内存
+            if var oldData = sessionPasswordData {
+                oldData.withUnsafeMutableBytes { bytes in
+                    if let baseAddress = bytes.baseAddress {
+                        memset(baseAddress, 0, bytes.count)
+                    }
+                }
+            }
+        }
+    }
+
+    /// 当前登录密码（用户本次输入，用于显示/修改配置）
+    @Published private(set) var sessionLoginPassword: String?
+
+    /// 获取会话密码（String格式，仅在需要时转换）
+    var sessionPassword: String? {
+        guard let data = sessionPasswordData else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    /// 登录失败次数
+    @Published private(set) var failedAttempts: Int = 0
+
+    /// 锁定截止时间
+    @Published private(set) var lockoutUntil: Date?
+
+    // MARK: - Constants
+
+    private let maxAttempts = 5  // 最多尝试5次
+    private let lockoutDuration: TimeInterval = 300  // 锁定5分钟
+
+    // MARK: - Services
+
+    private let keychainService = KeychainService.shared
+    private var cancellables = Set<AnyCancellable>()
+
+    // MARK: - Task Management
+
+    private var loginTask: Task<Void, Never>?
+    private var savePasswordTask: Task<Void, Never>?
+
+    // MARK: - Initialization
+
+    init() {
+        checkPasswordStatus()
+        setupNotificationObservers()
+    }
+
+    deinit {
+        // 取消所有进行中的任务
+        loginTask?.cancel()
+        savePasswordTask?.cancel()
+    }
+
+    // MARK: - Notification Observers
+
+    private func setupNotificationObservers() {
+        // 监听伪装模式解锁通知
+        NotificationCenter.default.publisher(for: .unlockFromDisguise)
+            .sink { [weak self] _ in
+                Task { @MainActor in
+                    await self?.handleDisguiseUnlock()
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    private func handleDisguiseUnlock() async {
+        print("🔓 收到伪装模式解锁通知")
+
+        // 从 Keychain 读取伪装密码序列
+        let disguisePassword = keychainService.loadDisguisePassword() ?? "1234"
+
+        // 验证伪装密码是否匹配主密码
+        if keychainService.verifyPassword(disguisePassword) {
+            // 密码匹配，获取数据加密密码
+            do {
+                let dataPassword = try await Task.detached {
+                    try self.keychainService.retrieveDataPassword(using: disguisePassword)
+                }.value
+
+                // 使用 Data 格式存储
+                sessionPasswordData = Data(dataPassword.utf8)
+                sessionLoginPassword = disguisePassword
+                isAuthenticated = true
+                print("✅ 伪装模式解锁成功，会话密码已设置")
+            } catch {
+                print("❌ 获取数据密码失败: \(error)")
+                isAuthenticated = false
+                errorMessage = "解锁失败，请使用主密码登录"
+            }
+        } else {
+            // 密码不匹配，说明伪装密码与主密码不一致
+            print("⚠️ 伪装密码与主密码不一致，需要重新登录")
+            isAuthenticated = false
+            errorMessage = "伪装密码与主密码不一致，请使用主密码登录"
+        }
+    }
+
+    // MARK: - Public Methods
+
+    /// 检查密码设置状态
+    func checkPasswordStatus() {
+        isPasswordSet = keychainService.isPasswordSet()
+        print("📱 密码状态检查: \(isPasswordSet ? "已设置" : "未设置")")
+    }
+
+    /// 设置密码（首次）
+    func setupPassword() {
+        guard !isProcessing else { return }
+
+        // 清除之前的错误
+        errorMessage = nil
+
+        // 验证密码
+        let validation = KeychainService.validatePasswordStrength(password)
+        guard validation.isValid else {
+            errorMessage = validation.message
+            return
+        }
+
+        // 检查密码匹配
+        guard password == confirmPassword else {
+            errorMessage = "两次输入的密码不一致"
+            return
+        }
+
+        isProcessing = true
+
+        // 异步保存密码
+        Task {
+            do {
+                let dataPassword = try keychainService.savePassword(password)
+
+                // 保存成功 - 使用 Data 格式存储
+                sessionPasswordData = Data(dataPassword.utf8)
+                sessionLoginPassword = password
+                isPasswordSet = true
+                isAuthenticated = true
+                clearFields()
+
+                print("✅ 密码设置成功")
+            } catch {
+                errorMessage = "保存密码失败: \(error.localizedDescription)"
+                print("❌ 密码设置失败: \(error)")
+            }
+
+            isProcessing = false
+        }
+    }
+
+    /// 登录验证
+    func login() {
+        guard !isProcessing else { return }
+
+        // 取消之前的登录任务
+        loginTask?.cancel()
+
+        // 清除之前的错误
+        errorMessage = nil
+
+        // 🔒 检查是否被锁定
+        if let lockoutUntil = lockoutUntil, Date() < lockoutUntil {
+            let remaining = Int(lockoutUntil.timeIntervalSinceNow)
+            let minutes = remaining / 60
+            let seconds = remaining % 60
+            if minutes > 0 {
+                errorMessage = String(format: "尝试次数过多，请在 %d 分 %d 秒后重试", minutes, seconds)
+            } else {
+                errorMessage = String(format: "尝试次数过多，请在 %d 秒后重试", seconds)
+            }
+            return
+        }
+
+        // 检查密码非空
+        guard !password.isEmpty else {
+            errorMessage = "请输入密码"
+            return
+        }
+
+        isProcessing = true
+        let inputPassword = password
+
+        // 创建新的登录任务
+        loginTask = Task(priority: .userInitiated) {
+            // 在后台执行耗时的Keychain操作，避免阻塞主线程
+            let ownerMatch = await Task.detached {
+                self.keychainService.verifyPassword(inputPassword)
+            }.value
+
+            let guestMatch = await Task.detached {
+                self.keychainService.isGuestPasswordSet()
+                    && self.keychainService.verifyGuestPassword(inputPassword)
+            }.value
+
+            // 检查任务是否被取消
+            guard !Task.isCancelled else {
+                await MainActor.run {
+                    isProcessing = false
+                }
+                return
+            }
+
+            // 回到主线程更新UI状态
+            if ownerMatch {
+                do {
+                    let dataPassword = try await Task.detached {
+                        try self.keychainService.retrieveDataPassword(using: inputPassword)
+                    }.value
+
+                    // 使用 Data 格式存储
+                    sessionPasswordData = Data(dataPassword.utf8)
+                    sessionLoginPassword = inputPassword
+                    isAuthenticated = true
+
+                    // 设置为主人模式
+                    GuestModeManager.shared.setAuthenticationMode(.owner)
+
+                    // ✅ 登录成功，重置失败计数
+                    failedAttempts = 0
+                    lockoutUntil = nil
+
+                    clearFields()
+                    print("✅ 登录成功（主人模式）")
+                } catch {
+                    errorMessage = "无法读取加密密钥"
+                    print("❌ 登录失败：\(error)")
+                }
+            } else if guestMatch {
+                // 访客模式登录成功
+                sessionPasswordData = nil
+                sessionLoginPassword = nil
+                isAuthenticated = true
+
+                // 设置为访客模式
+                GuestModeManager.shared.setAuthenticationMode(.guest)
+
+                // ✅ 登录成功，重置失败计数
+                failedAttempts = 0
+                lockoutUntil = nil
+
+                clearFields()
+                print("✅ 登录成功（访客模式）")
+            } else {
+                // ❌ 两个密码都验证失败
+                failedAttempts += 1
+                password = ""
+
+                // 检查是否需要锁定
+                if failedAttempts >= maxAttempts {
+                    lockoutUntil = Date().addingTimeInterval(lockoutDuration)
+                    errorMessage = String(format: "密码错误次数过多，已锁定 %d 分钟", Int(lockoutDuration / 60))
+                    print("🔒 账户已锁定 \(Int(lockoutDuration / 60)) 分钟")
+                } else {
+                    let remaining = maxAttempts - failedAttempts
+                    errorMessage = String(format: "密码错误，还可尝试 %d 次", remaining)
+                    print("❌ 登录失败：密码错误（剩余尝试次数：\(remaining)）")
+                }
+            }
+
+            isProcessing = false
+        }
+    }
+
+    /// 登出
+    func logout() {
+        isAuthenticated = false
+
+        // 🔒 安全清理密码内存
+        if var passwordData = sessionPasswordData {
+            passwordData.withUnsafeMutableBytes { bytes in
+                if let baseAddress = bytes.baseAddress {
+                    memset(baseAddress, 0, bytes.count)
+                }
+            }
+        }
+        sessionPasswordData = nil
+        sessionLoginPassword = nil
+
+        // 重置访客模式为主人模式
+        GuestModeManager.shared.reset()
+
+        clearFields()
+        print("👋 用户已登出，密码内存已安全清理")
+    }
+
+    /// 切换密码可见性
+    func togglePasswordVisibility() {
+        showPassword.toggle()
+    }
+
+    /// 清除输入字段
+    func clearFields() {
+        password = ""
+        confirmPassword = ""
+        errorMessage = nil
+    }
+
+    /// 验证密码是否正确
+    func verifyPassword(_ password: String) -> Bool {
+        return keychainService.verifyPassword(password)
+    }
+
+    /// 更新密码（重新加密后调用）
+    func updatePassword(oldPassword: String, newPassword: String) throws {
+        let dataPassword = try keychainService.changePassword(
+            oldPassword: oldPassword,
+            newPassword: newPassword
+        )
+        // 使用 Data 格式存储
+        sessionPasswordData = Data(dataPassword.utf8)
+        sessionLoginPassword = newPassword
+    }
+
+    // MARK: - Computed Properties
+
+    /// 设置密码按钮是否可用
+    var isSetupButtonEnabled: Bool {
+        !password.isEmpty && !confirmPassword.isEmpty && !isProcessing
+    }
+
+    /// 登录按钮是否可用
+    var isLoginButtonEnabled: Bool {
+        !password.isEmpty && !isProcessing
+    }
+}
+
+// MARK: - Password Strength Indicator
+
+extension AuthenticationViewModel {
+
+    /// 密码强度等级
+    enum PasswordStrength {
+        case weak  // 弱
+        case medium  // 中等
+        case strong  // 强
+
+        var color: Color {
+            switch self {
+            case .weak: return .red
+            case .medium: return .orange
+            case .strong: return .green
+            }
+        }
+
+        var text: String {
+            switch self {
+            case .weak: return "弱"
+            case .medium: return "中等"
+            case .strong: return "强"
+            }
+        }
+    }
+
+    /// 计算密码强度
+    var passwordStrength: PasswordStrength {
+        let length = password.count
+        let hasNumbers = password.rangeOfCharacter(from: .decimalDigits) != nil
+        let hasLetters = password.rangeOfCharacter(from: .letters) != nil
+        let hasSpecialChars =
+            password.rangeOfCharacter(
+                from: CharacterSet(charactersIn: "!@#$%^&*()_+-=[]{}|;:',.<>?/")) != nil
+
+        if length < 6 {
+            return .weak
+        } else if length >= 8 && ((hasNumbers && hasLetters) || hasSpecialChars) {
+            return .strong
+        } else {
+            return .medium
+        }
+    }
+}

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "SlashCommand(/workflow 分析零网络空间当前实现与定位书V1.2版本的功能差距，并制定详细的实现计划文档)",
+      "SlashCommand(/workflow:*)",
+      "SlashCommand(/research iOS localization and internationalization for SwiftUI apps targeting iOS 15+, including:\n1. Modern localization APIs (String(localized:), NSLocalizedString)\n2. Xcode project configuration for multiple languages (en-US, zh-CN)\n3. Localizable.strings file structure and best practices\n4. InfoPlist.strings for app metadata localization\n5. App Store Connect localization requirements\n6. Chinese App Store specific requirements and compliance\n7. Language switching implementation patterns\n8. Testing strategies for localized apps\n9. Dynamic Type support for Chinese characters\n10. Locale-specific formatting (dates, numbers, currency))",
+      "SlashCommand(/research:*)",
+      "Skill(research-methodology)",
+      "SlashCommand(/plan Complete iOS app internationalization by adding ~150 missing string keys to Localizable.xcstrings and updating all 24 view files to use String(localized:) instead of hardcoded Chinese strings. Current file has ~60 keys, need to add keys for: export (20 keys), folders (25 keys), tags (15 keys), disguise mode (40 keys), file preview (15 keys), gallery (15 keys), import (15 keys), network verification (30 keys), media detail (20 keys), and common actions (10 keys). All view files must be updated to replace hardcoded strings with localization keys.)",
+      "SlashCommand(/plan:*)",
+      "Bash(xcodebuild:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

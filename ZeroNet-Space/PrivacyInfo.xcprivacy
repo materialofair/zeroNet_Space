@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- 应用不进行跟踪 -->
+	<key>NSPrivacyTracking</key>
+	<false/>
+
+	<!-- 不收集任何用户数据 -->
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+
+	<!-- 声明使用的系统API及其用途 -->
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<!-- 文件时间戳API -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<!-- C617.1: 访问用户选择的文件时间戳 -->
+				<string>C617.1</string>
+			</array>
+		</dict>
+
+		<!-- 磁盘空间API -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<!-- E174.1: 向用户显示存储空间 -->
+				<string>E174.1</string>
+			</array>
+		</dict>
+
+		<!-- UserDefaults API -->
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<!-- CA92.1: 仅用于应用内设置 -->
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+
+	<!-- 跟踪域（无） -->
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+</dict>
+</plist>

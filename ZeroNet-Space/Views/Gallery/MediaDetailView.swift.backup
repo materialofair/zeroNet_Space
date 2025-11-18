@@ -1,0 +1,1452 @@
+//
+//  MediaDetailView.swift
+//  ZeroNet-Space
+//
+//  媒体详情视图
+//  全屏查看照片、播放视频、预览文件
+//
+
+import AVKit
+import CryptoKit
+import PDFKit
+import QuickLook
+import SwiftUI
+
+struct MediaDetailView: View {
+
+    // MARK: - Properties
+
+    let mediaItem: MediaItem
+
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.modelContext) var modelContext
+    @EnvironmentObject var authViewModel: AuthenticationViewModel
+
+    @State private var decryptedData: Data?
+    @State private var isLoading: Bool = true
+    @State private var errorMessage: String?
+    @State private var showDeleteConfirmation: Bool = false
+    @State private var imageScale: CGFloat = 1.0
+    @State private var imageOffset: CGSize = .zero
+
+    // 视频播放器和临时文件管理
+    @State private var videoPlayer: AVPlayer?
+    @State private var videoTempURL: URL?
+    @State private var showFullScreenVideoPlayer = false
+
+    // 文档临时文件管理（用于QuickLook预览）
+    @State private var documentTempURL: URL?
+
+    // MARK: - Services
+
+    private let storageService = FileStorageService.shared
+    private let encryptionService = EncryptionService.shared
+    private let keychainService = KeychainService.shared
+
+    // MARK: - Body
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            if isLoading {
+                loadingView
+            } else if let errorMessage = errorMessage {
+                errorView(message: errorMessage)
+            } else if let data = decryptedData {
+                mediaContentView(data: data)
+            } else if mediaItem.type == .video {
+                videoContainerView
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .confirmationDialog(
+            String(localized: "gallery.delete.title"), isPresented: $showDeleteConfirmation
+        ) {
+            Button(String(localized: "common.delete"), role: .destructive) {
+                deleteMedia()
+            }
+        } message: {
+            Text(String(localized: "media.delete.confirmation"))
+        }
+        .task {
+            print("⚡️ MediaDetailView.task 开始执行")
+            print("⚡️ Task执行环境 - MediaItem ID: \(mediaItem.id)")
+            print("⚡️ Task执行环境 - 文件路径: \(mediaItem.encryptedPath)")
+            await loadAndDecryptMedia()
+            print("⚡️ MediaDetailView.task 执行完成")
+        }
+        .onAppear {
+            print("👀 MediaDetailView appeared - 媒体类型: \(mediaItem.type.rawValue)")
+            print("👀 MediaDetailView appeared - 文件名: \(mediaItem.fullFileName)")
+            print("👀 MediaDetailView appeared - 加密路径: \(mediaItem.encryptedPath)")
+        }
+        .fullScreenCover(isPresented: $showFullScreenVideoPlayer) {
+            VideoPlayerView(video: mediaItem)
+                .environmentObject(authViewModel)
+        }
+        .safeAreaInset(edge: .top) {
+            topTitleBar
+        }
+    }
+
+    // MARK: - Loading View
+
+    private var loadingView: some View {
+        VStack(spacing: 20) {
+            ProgressView()
+                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                .scaleEffect(1.5)
+
+            Text(String(localized: "media.decrypting"))
+                .foregroundColor(.white)
+                .font(.subheadline)
+        }
+    }
+
+    // MARK: - Error View
+
+    private func errorView(message: String) -> some View {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 60))
+                .foregroundColor(.red)
+
+            Text(String(localized: "media.loadFailed"))
+                .font(.title2)
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+
+            Text(message)
+                .font(.subheadline)
+                .foregroundColor(.white.opacity(0.8))
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+        }
+    }
+
+    // MARK: - Media Content View
+
+    @ViewBuilder
+    private func mediaContentView(data: Data) -> some View {
+        VStack(spacing: 0) {
+            // 媒体内容
+            mediaContent(data: data)
+
+            // 信息栏
+            mediaInfoBar
+        }
+    }
+
+    private var videoContainerView: some View {
+        VStack(spacing: 0) {
+            videoView()
+            mediaInfoBar
+        }
+    }
+
+    @ViewBuilder
+    private func mediaContent(data: Data) -> some View {
+        switch mediaItem.type {
+        case .photo:
+            photoView(data: data)
+        case .video:
+            videoView()
+        case .document:
+            documentView(data: data)
+        }
+    }
+
+    // MARK: - Photo View
+
+    private func photoView(data: Data) -> some View {
+        GeometryReader { geometry in
+            if let uiImage = UIImage(data: data) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .scaleEffect(imageScale)
+                    .offset(imageOffset)
+                    .gesture(
+                        MagnificationGesture()
+                            .onChanged { value in
+                                imageScale = value
+                            }
+                            .onEnded { _ in
+                                withAnimation(.spring()) {
+                                    if imageScale < 1 {
+                                        imageScale = 1
+                                        imageOffset = .zero
+                                    } else if imageScale > 3 {
+                                        imageScale = 3
+                                    }
+                                }
+                            }
+                    )
+                    .gesture(
+                        DragGesture()
+                            .onChanged { value in
+                                if imageScale > 1 {
+                                    imageOffset = value.translation
+                                }
+                            }
+                            .onEnded { _ in
+                                withAnimation(.spring()) {
+                                    if imageScale <= 1 {
+                                        imageOffset = .zero
+                                    }
+                                }
+                            }
+                    )
+                    .onTapGesture(count: 2) {
+                        withAnimation(.spring()) {
+                            if imageScale == 1 {
+                                imageScale = 2
+                            } else {
+                                imageScale = 1
+                                imageOffset = .zero
+                            }
+                        }
+                    }
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+            }
+        }
+    }
+
+    // MARK: - Video View
+
+    private func videoView() -> some View {
+        ZStack(alignment: .bottomTrailing) {
+            Group {
+                if let player = videoPlayer {
+                    VideoPlayer(player: player)
+                        .onDisappear {
+                            cleanupVideoPlayer()
+                        }
+                } else {
+                    ProgressView()
+                        .tint(.white)
+                        .onAppear {
+                            if let url = videoTempURL {
+                                setupVideoPlayer(url: url)
+                            }
+                        }
+                }
+            }
+
+            // 全屏播放按钮
+            Button {
+                // 暂停当前内嵌播放器，打开全屏播放器
+                videoPlayer?.pause()
+                showFullScreenVideoPlayer = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    Text(String(localized: "media.fullscreen"))
+                }
+                .font(.caption)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.black.opacity(0.6))
+                .foregroundColor(.white)
+                .cornerRadius(12)
+                .padding()
+                .disabled(videoPlayer == nil)
+            }
+        }
+    }
+
+    // MARK: - Document View
+
+    private func documentView(data: Data) -> some View {
+        let ext = mediaItem.fileExtension.lowercased()
+            .trimmingCharacters(in: CharacterSet(charactersIn: "."))
+
+        return Group {
+            switch ext {
+            case "pdf":
+                pdfDocumentView(data: data)
+            case "md":
+                markdownDocumentView(data: data)
+            case "txt":
+                textDocumentView(data: data)
+            default:
+                genericDocumentQuickLookView(data: data)
+            }
+        }
+    }
+
+    // MARK: - PDF Document View
+
+    private func pdfDocumentView(data: Data) -> some View {
+        PDFReaderView(data: data)
+    }
+
+    // MARK: - Markdown Document View
+
+    private func markdownDocumentView(data: Data) -> some View {
+        let text = String(data: data, encoding: .utf8) ?? String(localized: "media.text.parseError")
+        let attributed: AttributedString? = try? AttributedString(
+            markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))
+
+        return ScrollView {
+            if let attributed = attributed {
+                Text(attributed)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+            } else {
+                Text(text)
+                    .font(.system(.body, design: .monospaced))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+            }
+        }
+        .background(Color.black.ignoresSafeArea())
+    }
+
+    // MARK: - Text Document View
+
+    private func textDocumentView(data: Data) -> some View {
+        let text = String(data: data, encoding: .utf8) ?? String(localized: "media.text.parseError")
+
+        return ScrollView {
+            Text(text)
+                .font(.system(.body, design: .monospaced))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+        }
+        .background(Color.black.ignoresSafeArea())
+    }
+
+    // MARK: - Generic Document View (QuickLook fallback)
+
+    private func genericDocumentQuickLookView(data: Data) -> some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            if let url = documentTempURL {
+                QuickLookPreview(url: url)
+            } else {
+                VStack(spacing: 16) {
+                    ProgressView()
+                        .tint(.white)
+
+                    Text(String(localized: "media.preparing"))
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.8))
+                }
+            }
+        }
+        .task {
+            await prepareDocumentTempFile(data: data)
+        }
+        .onDisappear {
+            cleanupDocumentTempFile()
+        }
+    }
+
+    // MARK: - Media Info Bar
+
+    private var mediaInfoBar: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // 详细信息
+            HStack {
+                Label(mediaItem.formattedFileSize, systemImage: "doc")
+
+                if let dimensions = mediaItem.formattedDimensions {
+                    Label(dimensions, systemImage: "rectangle")
+                }
+
+                if let duration = mediaItem.formattedDuration {
+                    Label(duration, systemImage: "clock")
+                }
+
+                Spacer()
+            }
+            .font(.caption)
+            .foregroundColor(.white.opacity(0.8))
+
+            // 导入日期
+            Text(mediaItem.formattedCreatedDate)
+                .font(.caption2)
+                .foregroundColor(.white.opacity(0.6))
+        }
+        .padding()
+        .background(Color.black.opacity(0.8))
+    }
+
+    // MARK: - Delete Button
+
+    private var deleteButton: some View {
+        Button(role: .destructive) {
+            showDeleteConfirmation = true
+        } label: {
+            Image(systemName: "trash")
+        }
+    }
+
+    // MARK: - Private Methods
+
+    /// 加载并解密媒体
+    private func loadAndDecryptMedia() async {
+        print("🔓 开始加载和解密媒体...")
+        print("📁 文件类型: \(mediaItem.type.rawValue)")
+        print("📄 文件名: \(mediaItem.fullFileName)")
+        print("📊 媒体元数据:")
+        print("   - 尺寸: \(mediaItem.width ?? 0)×\(mediaItem.height ?? 0)")
+        print("   - 时长: \(mediaItem.duration ?? 0)秒")
+        print("   - 文件大小: \(mediaItem.formattedFileSize)")
+        print(
+            "   - 缩略图: \(mediaItem.thumbnailData != nil ? "有(\(mediaItem.thumbnailData!.count) bytes)" : "无")"
+        )
+
+        do {
+            // 获取用户密码（临时方案）
+            guard let password = getSessionPassword() else {
+                print("❌ 无法获取密码")
+                errorMessage = String(localized: "media.error.noPassword")
+                isLoading = false
+                return
+            }
+
+            print("✅ 密码已获取")
+
+            // 读取加密文件
+            print("📂 正在读取加密文件: \(mediaItem.encryptedPath)")
+
+            // 检查文件是否存在（使用FileStorageService的方法，会自动处理相对路径）
+            let fileExists = storageService.fileExists(path: mediaItem.encryptedPath)
+            print("📁 文件存在性检查: \(fileExists ? "存在" : "不存在")")
+
+            if !fileExists {
+                throw NSError(
+                    domain: "MediaDetailView", code: 404,
+                    userInfo: [
+                        NSLocalizedDescriptionKey: "加密文件不存在: \(mediaItem.encryptedPath)"
+                    ])
+            }
+
+            if mediaItem.type == .video {
+                let tempURL = try storageService.createDecryptedTempFile(
+                    path: mediaItem.encryptedPath,
+                    password: password,
+                    preferredExtension: mediaItem.fileExtension
+                )
+
+                await MainActor.run {
+                    self.isLoading = false
+                    self.setupVideoPlayer(url: tempURL)
+                    print("🎬 视频临时文件已就绪: \(tempURL.lastPathComponent)")
+                }
+                return
+            }
+
+            let encryptedData = try storageService.loadEncrypted(path: mediaItem.encryptedPath)
+            print("📊 加密数据大小: \(encryptedData.count) bytes")
+
+            // 解密
+            print("🔓 正在解密...")
+            let data = try encryptionService.decrypt(
+                encryptedData: encryptedData, password: password)
+            print("✅ 解密成功，数据大小: \(data.count) bytes")
+
+            await MainActor.run {
+                self.decryptedData = data
+                self.isLoading = false
+                print("✅ 媒体数据已加载到视图")
+            }
+
+        } catch {
+            await MainActor.run {
+                self.errorMessage = error.localizedDescription
+                self.isLoading = false
+            }
+            print("❌ 媒体加载失败: \(error)")
+            print("❌ 错误详情: \(error.localizedDescription)")
+        }
+    }
+
+    /// 删除媒体
+    private func deleteMedia() {
+        Task {
+            do {
+                // 如果是视频，先清理播放器资源
+                if mediaItem.type == .video {
+                    await MainActor.run {
+                        cleanupVideoPlayer()
+                    }
+                    // 等待资源释放
+                    try await Task.sleep(nanoseconds: 100_000_000)  // 0.1秒
+                }
+
+                // 删除加密文件
+                try storageService.deleteFile(path: mediaItem.encryptedPath)
+
+                // 从数据库删除
+                modelContext.delete(mediaItem)
+                try? modelContext.save()
+
+                // 返回上一页
+                await MainActor.run {
+                    dismiss()
+                }
+
+                print("🗑️ 媒体已删除")
+
+            } catch {
+                await MainActor.run {
+                    errorMessage = "删除失败: \(error.localizedDescription)"
+                }
+                print("❌ 删除失败: \(error)")
+            }
+        }
+    }
+
+    /// 设置视频播放器
+    private func setupVideoPlayer(url: URL) {
+        videoTempURL = url
+        videoPlayer = AVPlayer(url: url)
+        print("▶️ 视频播放器已创建")
+    }
+
+    /// 清理视频播放器资源
+    private func cleanupVideoPlayer() {
+        // 停止播放
+        videoPlayer?.pause()
+        videoPlayer?.replaceCurrentItem(with: nil)
+        videoPlayer = nil
+
+        // 删除临时文件
+        if let tempURL = videoTempURL {
+            try? FileManager.default.removeItem(at: tempURL)
+            print("🧹 临时视频文件已清理: \(tempURL.lastPathComponent)")
+            videoTempURL = nil
+        }
+    }
+
+    /// 清理文档临时文件
+    private func cleanupDocumentTempFile() {
+        if let tempURL = documentTempURL {
+            try? FileManager.default.removeItem(at: tempURL)
+            print("🧹 临时文档文件已清理: \(tempURL.lastPathComponent)")
+            documentTempURL = nil
+        }
+    }
+
+    /// 保存临时文件（用于文档预览）
+    private func prepareDocumentTempFile(data: Data) async {
+        // 避免重复创建
+        if documentTempURL != nil {
+            return
+        }
+
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileName = UUID().uuidString + mediaItem.fileExtension
+        let tempURL = tempDir.appendingPathComponent(fileName)
+
+        do {
+            try data.write(to: tempURL, options: .atomic)
+            await MainActor.run {
+                documentTempURL = tempURL
+            }
+            print("📄 文档临时文件已创建: \(tempURL.lastPathComponent)")
+        } catch {
+            print("❌ 文档临时文件创建失败: \(error)")
+        }
+    }
+
+    /// 获取会话密码
+    private func getSessionPassword() -> String? {
+        return authViewModel.sessionPassword
+    }
+
+    // MARK: - Top Title Bar
+
+    private var topTitleBar: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.backward")
+                        .font(.title3)
+                        .foregroundColor(.white)
+                        .frame(width: 32, height: 32)
+                        .background(Color.white.opacity(0.15))
+                        .clipShape(Circle())
+                }
+
+                Text(mediaItem.fullFileName)
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+
+                Spacer()
+
+                Button(role: .destructive) {
+                    showDeleteConfirmation = true
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.title3)
+                        .foregroundColor(.white)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 10)
+            .padding(.bottom, 8)
+        }
+        .background(
+            LinearGradient(
+                colors: [Color.black.opacity(0.85), Color.black.opacity(0.4)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea(edges: .top)
+        )
+    }
+}
+
+// MARK: - QuickLook Preview
+
+struct QuickLookPreview: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(url: url)
+    }
+
+    func makeUIViewController(context: Context) -> QLPreviewController {
+        let controller = QLPreviewController()
+        controller.dataSource = context.coordinator
+        return controller
+    }
+
+    func updateUIViewController(_ controller: QLPreviewController, context: Context) {}
+
+    final class Coordinator: NSObject, QLPreviewControllerDataSource {
+        let url: URL
+
+        init(url: URL) {
+            self.url = url
+        }
+
+        func numberOfPreviewItems(in controller: QLPreviewController) -> Int {
+            1
+        }
+
+        func previewController(
+            _ controller: QLPreviewController,
+            previewItemAt index: Int
+        ) -> QLPreviewItem {
+            url as QLPreviewItem
+        }
+    }
+}
+
+// MARK: - PDF Reader (SwiftUI Wrapper)
+
+struct PDFReaderView: View {
+    let data: Data
+    private let cacheKey: String
+
+    private enum ReadMode {
+        case original
+        case article
+    }
+
+    @State private var pdfDocument: PDFDocument?
+    @State private var currentPageIndex: Int = 0
+    @State private var pageCount: Int = 0
+    @State private var searchText: String = ""
+    @State private var searchToken: Int = 0
+    @State private var searchDirection: Int = 0
+    @State private var outlineItems: [OutlineItem] = []
+    @State private var showOutline: Bool = false
+    @State private var readMode: ReadMode = .original
+    @State private var articleSections: [ArticleSection]?
+    @State private var isExtractingArticle: Bool = false
+    @State private var articleFontSize: Double = 17
+    @State private var articleSearchText: String = ""
+    @State private var articleSearchResults: [ArticleSearchResult] = []
+    @State private var articleSearchIndex: Int = 0
+    @State private var articleSearchToken: Int = 0
+
+    private struct OutlineItem: Identifiable {
+        let id = UUID()
+        let title: String
+        let pageIndex: Int
+        let level: Int
+    }
+
+    struct ArticleSection: Identifiable {
+        let id = UUID()
+        let title: String?
+        let content: String
+    }
+
+    private struct ArticleSearchResult {
+        let sectionIndex: Int
+        let range: Range<String.Index>
+    }
+
+    init(data: Data) {
+        self.data = data
+        self.cacheKey = PDFReaderView.makeCacheKey(for: data)
+        _pdfDocument = State(initialValue: PDFDocument(data: data))
+    }
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                // 顶部控制条：模式切换 + 目录/页码/搜索 or 文章阅读控制
+                HStack(spacing: 12) {
+                    Picker("", selection: $readMode) {
+                        Text(String(localized: "media.readMode.original")).tag(ReadMode.original)
+                        Text(String(localized: "media.readMode.article")).tag(ReadMode.article)
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 180)
+
+                    Spacer()
+
+                    if readMode == .original {
+                        Button {
+                            showOutline = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "list.bullet")
+                                Text(String(localized: "media.toc"))
+                            }
+                        }
+                        .foregroundColor(outlineItems.isEmpty ? .gray : .white)
+                        .disabled(outlineItems.isEmpty)
+
+                        Text(
+                            pageCount > 0
+                                ? "第 \(currentPageIndex + 1)/\(pageCount) 页"
+                                : String(localized: "common.loading")
+                        )
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.9))
+
+                        Button {
+                            if currentPageIndex > 0 {
+                                currentPageIndex -= 1
+                            }
+                        } label: {
+                            Image(systemName: "chevron.left.circle.fill")
+                        }
+                        .foregroundColor(currentPageIndex > 0 ? .white : .gray)
+                        .disabled(currentPageIndex == 0)
+
+                        Button {
+                            if currentPageIndex + 1 < pageCount {
+                                currentPageIndex += 1
+                            }
+                        } label: {
+                            Image(systemName: "chevron.right.circle.fill")
+                        }
+                        .foregroundColor(
+                            (currentPageIndex + 1 < pageCount) ? .white : .gray
+                        )
+                        .disabled(!(currentPageIndex + 1 < pageCount))
+
+                        TextField(String(localized: "common.search"), text: $searchText)
+                            .textFieldStyle(.roundedBorder)
+                            .frame(maxWidth: 200)
+
+                        Button {
+                            guard
+                                !searchText.trimmingCharacters(in: .whitespaces).isEmpty
+                            else { return }
+                            searchDirection = -1
+                            searchToken &+= 1
+                        } label: {
+                            Image(systemName: "chevron.up.circle")
+                        }
+                        .foregroundColor(.white)
+
+                        Button {
+                            guard
+                                !searchText.trimmingCharacters(in: .whitespaces).isEmpty
+                            else { return }
+                            searchDirection = 1
+                            searchToken &+= 1
+                        } label: {
+                            Image(systemName: "chevron.down.circle")
+                        }
+                        .foregroundColor(.white)
+                    } else {
+                        HStack(spacing: 8) {
+                            Button {
+                                articleFontSize = max(14, articleFontSize - 1)
+                            } label: {
+                                Text("A-")
+                                    .font(.caption)
+                                    .padding(6)
+                                    .background(Color.white.opacity(0.1))
+                                    .cornerRadius(6)
+                            }
+                            .foregroundColor(.white)
+
+                            Button {
+                                articleFontSize = min(24, articleFontSize + 1)
+                            } label: {
+                                Text("A+")
+                                    .font(.caption)
+                                    .padding(6)
+                                    .background(Color.white.opacity(0.1))
+                                    .cornerRadius(6)
+                            }
+                            .foregroundColor(.white)
+
+                            Text("\(Int(articleFontSize))")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.8))
+
+                            Divider()
+                                .frame(height: 18)
+                                .background(Color.white.opacity(0.3))
+
+                            TextField(String(localized: "common.search"), text: $articleSearchText)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(maxWidth: 160)
+
+                            Button {
+                                let term = articleSearchText.trimmingCharacters(
+                                    in: .whitespacesAndNewlines)
+                                guard !term.isEmpty, !articleSearchResults.isEmpty else {
+                                    return
+                                }
+                                let count = articleSearchResults.count
+                                articleSearchIndex = (articleSearchIndex - 1 + count) % count
+                                articleSearchToken &+= 1
+                            } label: {
+                                Image(systemName: "chevron.up.circle")
+                            }
+                            .foregroundColor(.white)
+
+                            Button {
+                                let term = articleSearchText.trimmingCharacters(
+                                    in: .whitespacesAndNewlines)
+                                guard !term.isEmpty, !articleSearchResults.isEmpty else {
+                                    return
+                                }
+                                let count = articleSearchResults.count
+                                articleSearchIndex = (articleSearchIndex + 1) % count
+                                articleSearchToken &+= 1
+                            } label: {
+                                Image(systemName: "chevron.down.circle")
+                            }
+                            .foregroundColor(.white)
+                        }
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .background(Color.black.opacity(0.9))
+
+                Divider()
+                    .background(Color.white.opacity(0.2))
+
+                if readMode == .original {
+                    // 快速页码滑块
+                    if pageCount > 1 {
+                        HStack {
+                            Text("1")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.7))
+
+                            Slider(
+                                value: Binding(
+                                    get: {
+                                        guard pageCount > 0 else { return 0 }
+                                        return Double(currentPageIndex)
+                                    },
+                                    set: { newValue in
+                                        guard pageCount > 0 else { return }
+                                        let idx = min(
+                                            max(Int(newValue.rounded()), 0),
+                                            max(pageCount - 1, 0))
+                                        if idx != currentPageIndex {
+                                            currentPageIndex = idx
+                                        }
+                                    }
+                                ),
+                                in: 0...Double(max(pageCount - 1, 0))
+                            )
+                            .tint(.white)
+
+                            Text("\(pageCount)")
+                                .font(.caption)
+                                .foregroundColor(.white.opacity(0.7))
+                        }
+                        .padding(.horizontal)
+                        .padding(.bottom, 8)
+                    }
+
+                    // PDF 内容（含缩略图）
+                    PDFKitView(
+                        data: data,
+                        document: pdfDocument,
+                        currentPageIndex: $currentPageIndex,
+                        pageCount: $pageCount,
+                        searchText: $searchText,
+                        searchToken: $searchToken,
+                        searchDirection: $searchDirection
+                    )
+                    .edgesIgnoringSafeArea(.bottom)
+                } else {
+                    // 文章模式视图
+                    articleModeView
+                        .edgesIgnoringSafeArea(.bottom)
+                }
+            }
+        }
+        .onAppear {
+            loadOutline()
+        }
+        .onChange(of: readMode) { _, newValue in
+            if newValue == .article {
+                startExtractArticleTextIfNeeded()
+            }
+        }
+        .onChange(of: articleSearchText) { _, _ in
+            rebuildArticleSearchResults()
+        }
+        .sheet(isPresented: $showOutline) {
+            NavigationStack {
+                List(outlineItems) { item in
+                    Button {
+                        currentPageIndex = item.pageIndex
+                        showOutline = false
+                    } label: {
+                        Text(
+                            item.title.isEmpty
+                                ? "第 \(item.pageIndex + 1) 页" : item.title
+                        )
+                        .padding(.leading, CGFloat(item.level * 16))
+                    }
+                }
+                .navigationTitle(String(localized: "media.toc.title"))
+                .navigationBarTitleDisplayMode(.inline)
+            }
+        }
+    }
+
+    private static func makeCacheKey(for data: Data) -> String {
+        let digest = SHA256.hash(data: data)
+        return digest.map { String(format: "%02x", $0) }.joined()
+    }
+
+    private func loadOutline() {
+        guard outlineItems.isEmpty, let document = pdfDocument,
+            let root = document.outlineRoot
+        else {
+            return
+        }
+
+        var items: [OutlineItem] = []
+
+        func traverse(node: PDFOutline, level: Int) {
+            for index in 0..<node.numberOfChildren {
+                guard let child = node.child(at: index) else { continue }
+
+                let title = child.label ?? ""
+                let pageIndex: Int
+                if let page = child.destination?.page {
+                    pageIndex = document.index(for: page)
+                } else {
+                    pageIndex = 0
+                }
+
+                items.append(
+                    OutlineItem(title: title, pageIndex: pageIndex, level: level))
+
+                if child.numberOfChildren > 0 {
+                    traverse(node: child, level: level + 1)
+                }
+            }
+        }
+
+        traverse(node: root, level: 0)
+        outlineItems = items
+    }
+
+    private var articleModeView: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                if let sections = articleSections, !sections.isEmpty {
+                    LazyVStack(alignment: .leading, spacing: 16) {
+                        ForEach(Array(sections.enumerated()), id: \.offset) { index, section in
+                            VStack(alignment: .leading, spacing: 8) {
+                                if let title = section.title {
+                                    Text(title)
+                                        .font(
+                                            .system(
+                                                size: articleFontSize + 2,
+                                                weight: .semibold)
+                                        )
+                                        .foregroundColor(.yellow)
+                                        .frame(
+                                            maxWidth: .infinity,
+                                            alignment: .leading)
+                                }
+                                bodyText(for: section, at: index)
+                            }
+                            .id(index)
+                        }
+                    }
+                    .padding()
+                } else if isExtractingArticle {
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .tint(.white)
+                        Text(String(localized: "media.article.generating"))
+                            .font(.subheadline)
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    Text(String(localized: "media.pdf.extractFailed"))
+                        .font(.subheadline)
+                        .foregroundColor(.white.opacity(0.8))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .padding()
+                }
+            }
+            .background(Color.black)
+            .onChange(of: articleSearchToken) { _, _ in
+                guard !articleSearchResults.isEmpty else { return }
+                let result = articleSearchResults[articleSearchIndex]
+                withAnimation {
+                    proxy.scrollTo(result.sectionIndex, anchor: .top)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func bodyText(for section: ArticleSection, at index: Int) -> some View {
+        let text = section.content
+
+        if let range = currentHighlightRange(forSection: index, in: text) {
+            let before = String(text[..<range.lowerBound])
+            let match = String(text[range])
+            let after = String(text[range.upperBound...])
+
+            HStack(alignment: .top, spacing: 0) {
+                Text(before)
+                    .font(.system(size: articleFontSize))
+                    .foregroundColor(.white)
+
+                Text(match)
+                    .font(.system(size: articleFontSize))
+                    .foregroundColor(.black)
+                    .background(Color.yellow)
+
+                Text(after)
+                    .font(.system(size: articleFontSize))
+                    .foregroundColor(.white)
+            }
+            .lineSpacing(6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.bottom, 12)
+        } else {
+            Text(text)
+                .font(.system(size: articleFontSize))
+                .foregroundColor(.white)
+                .lineSpacing(6)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, 12)
+        }
+    }
+
+    private func currentHighlightRange(
+        forSection index: Int,
+        in text: String
+    ) -> Range<String.Index>? {
+        guard !articleSearchResults.isEmpty,
+            articleSearchIndex >= 0,
+            articleSearchIndex < articleSearchResults.count
+        else {
+            return nil
+        }
+
+        let result = articleSearchResults[articleSearchIndex]
+        guard result.sectionIndex == index else {
+            return nil
+        }
+        return result.range
+    }
+
+    private func startExtractArticleTextIfNeeded() {
+        if let cached = ArticleExtractionCache.shared.sections(for: cacheKey) {
+            articleSections = cached
+            rebuildArticleSearchResults()
+            return
+        }
+
+        guard articleSections == nil, !isExtractingArticle else { return }
+
+        isExtractingArticle = true
+        let sourceData = data
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            var sections: [ArticleSection] = []
+
+            if let document = PDFDocument(data: sourceData) {
+                let pageCount = document.pageCount
+
+                var currentTitle: String?
+                var currentBody = ""
+
+                func appendCurrentSection() {
+                    let trimmedBody = currentBody.trimmingCharacters(
+                        in: .whitespacesAndNewlines)
+                    guard !trimmedBody.isEmpty || currentTitle != nil else { return }
+                    sections.append(
+                        ArticleSection(
+                            title: currentTitle,
+                            content: trimmedBody
+                        ))
+                    currentBody = ""
+                }
+
+                for index in 0..<pageCount {
+                    guard let page = document.page(at: index),
+                        let pageText = page.string
+                    else { continue }
+
+                    let lines = pageText.components(separatedBy: .newlines)
+                    for line in lines {
+                        let trimmed = line.trimmingCharacters(in: .whitespaces)
+                        if trimmed.isEmpty {
+                            currentBody.append("\n")
+                            continue
+                        }
+
+                        if isHeadingLine(trimmed) {
+                            appendCurrentSection()
+                            currentTitle = trimmed
+                        } else {
+                            if !currentBody.isEmpty {
+                                currentBody.append("\n\n")
+                            }
+                            currentBody.append(trimmed)
+                        }
+                    }
+                }
+
+                appendCurrentSection()
+            }
+
+            DispatchQueue.main.async {
+                let finalSections = sections.isEmpty ? nil : sections
+                self.articleSections = finalSections
+                self.isExtractingArticle = false
+                if let finalSections = finalSections {
+                    ArticleExtractionCache.shared.store(
+                        sections: finalSections,
+                        for: self.cacheKey
+                    )
+                }
+                self.rebuildArticleSearchResults()
+            }
+        }
+    }
+
+    private func isHeadingLine(_ line: String) -> Bool {
+        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty { return false }
+
+        if trimmed.count <= 30 {
+            if trimmed.hasPrefix(String(localized: "media.page.prefix")),
+                trimmed.contains(String(localized: "media.chapter"))
+                    || trimmed.contains(String(localized: "media.section"))
+                    || trimmed.contains(String(localized: "media.chapter.alt"))
+            {
+                return true
+            }
+
+            if let first = trimmed.first, first.isNumber {
+                let rest = trimmed.dropFirst()
+                if rest.prefix(3).contains(".") || rest.prefix(3).contains("、") {
+                    return true
+                }
+            }
+        }
+
+        return false
+    }
+
+    private func rebuildArticleSearchResults() {
+        articleSearchResults = []
+        articleSearchIndex = 0
+
+        let term = articleSearchText.trimmingCharacters(
+            in: .whitespacesAndNewlines)
+        guard !term.isEmpty, let sections = articleSections else { return }
+
+        var results: [ArticleSearchResult] = []
+
+        for (sectionIndex, section) in sections.enumerated() {
+            let text = section.content
+            var searchRange = text.startIndex..<text.endIndex
+
+            while let range = text.range(
+                of: term, options: [.caseInsensitive], range: searchRange)
+            {
+                results.append(
+                    ArticleSearchResult(
+                        sectionIndex: sectionIndex,
+                        range: range
+                    ))
+                searchRange = range.upperBound..<text.endIndex
+            }
+        }
+
+        articleSearchResults = results
+        articleSearchIndex = 0
+    }
+}
+
+// MARK: - PDFKit View
+
+struct PDFKitView: UIViewRepresentable {
+    let data: Data
+    let document: PDFDocument?
+
+    @Binding var currentPageIndex: Int
+    @Binding var pageCount: Int
+    @Binding var searchText: String
+    @Binding var searchToken: Int
+    @Binding var searchDirection: Int
+
+    // 容器视图：包含 PDFView 和缩略图视图
+    final class PDFContainerView: UIView {
+        let pdfView = PDFView()
+        let thumbnailView = PDFThumbnailView()
+
+        override init(frame: CGRect) {
+            super.init(frame: frame)
+
+            backgroundColor = .black
+
+            pdfView.translatesAutoresizingMaskIntoConstraints = false
+            thumbnailView.translatesAutoresizingMaskIntoConstraints = false
+
+            addSubview(pdfView)
+            addSubview(thumbnailView)
+
+            // 布局：上方是PDF，底部是缩略图条
+            NSLayoutConstraint.activate([
+                pdfView.topAnchor.constraint(equalTo: topAnchor),
+                pdfView.leadingAnchor.constraint(equalTo: leadingAnchor),
+                pdfView.trailingAnchor.constraint(equalTo: trailingAnchor),
+
+                thumbnailView.topAnchor.constraint(equalTo: pdfView.bottomAnchor),
+                thumbnailView.leadingAnchor.constraint(equalTo: leadingAnchor),
+                thumbnailView.trailingAnchor.constraint(equalTo: trailingAnchor),
+                thumbnailView.bottomAnchor.constraint(equalTo: bottomAnchor),
+                thumbnailView.heightAnchor.constraint(equalToConstant: 72),
+            ])
+
+            thumbnailView.pdfView = pdfView
+            thumbnailView.layoutMode = .horizontal
+            thumbnailView.backgroundColor = UIColor.black
+        }
+
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) has not been implemented")
+        }
+    }
+
+    final class Coordinator: NSObject, PDFViewDelegate {
+        var parent: PDFKitView
+        var lastSearchText: String = ""
+        var lastSearchToken: Int = 0
+        var searchResults: [PDFSelection] = []
+        var searchIndex: Int = 0
+
+        init(parent: PDFKitView) {
+            self.parent = parent
+        }
+
+        @objc func pdfViewPageChanged(_ notification: Notification) {
+            guard
+                let pdfView = notification.object as? PDFView,
+                let document = pdfView.document,
+                let currentPage = pdfView.currentPage,
+                let index = document.index(for: currentPage) as Int?
+            else {
+                return
+            }
+
+            DispatchQueue.main.async {
+                self.parent.currentPageIndex = index
+                self.parent.pageCount = document.pageCount
+            }
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(parent: self)
+    }
+
+    func makeUIView(context: Context) -> PDFContainerView {
+        let container = PDFContainerView()
+
+        let pdfView = container.pdfView
+        pdfView.autoScales = true
+        pdfView.displayMode = .singlePageContinuous
+        pdfView.displayDirection = .vertical
+        pdfView.backgroundColor = .black
+        pdfView.delegate = context.coordinator
+
+        if let activeDocument = document ?? PDFDocument(data: data) {
+            pdfView.document = activeDocument
+            pageCount = activeDocument.pageCount
+            currentPageIndex = 0
+        }
+
+        NotificationCenter.default.addObserver(
+            context.coordinator,
+            selector: #selector(Coordinator.pdfViewPageChanged(_:)),
+            name: Notification.Name.PDFViewPageChanged,
+            object: pdfView
+        )
+
+        return container
+    }
+
+    func updateUIView(_ container: PDFContainerView, context: Context) {
+        guard let document = container.pdfView.document else { return }
+
+        // 更新总页数
+        if pageCount != document.pageCount {
+            pageCount = document.pageCount
+        }
+
+        // 根据当前页索引跳转
+        if currentPageIndex >= 0 && currentPageIndex < document.pageCount {
+            if let page = document.page(at: currentPageIndex),
+                container.pdfView.currentPage != page
+            {
+                container.pdfView.go(to: page)
+            }
+        }
+
+        // 搜索功能：定位到第一个匹配，并支持上下结果
+        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let coordinator = context.coordinator
+
+        // 新搜索词：重新查找所有结果
+        if trimmed != coordinator.lastSearchText {
+            coordinator.lastSearchText = trimmed
+            coordinator.searchResults = []
+            coordinator.searchIndex = 0
+
+            if !trimmed.isEmpty {
+                let results = document.findString(
+                    trimmed, withOptions: [.caseInsensitive])
+                coordinator.searchResults = results
+                coordinator.searchIndex = 0
+
+                if let first = results.first {
+                    container.pdfView.currentSelection = first
+                    container.pdfView.go(to: first)
+                } else {
+                    container.pdfView.currentSelection = nil
+                }
+            } else {
+                container.pdfView.currentSelection = nil
+            }
+        }
+
+        // 搜索导航：上一个 / 下一个
+        if searchToken != coordinator.lastSearchToken {
+            coordinator.lastSearchToken = searchToken
+
+            guard !coordinator.searchResults.isEmpty else { return }
+
+            let direction = searchDirection
+            let count = coordinator.searchResults.count
+            var index = coordinator.searchIndex
+
+            if direction > 0 {
+                index = (index + 1) % count
+            } else if direction < 0 {
+                index = (index - 1 + count) % count
+            }
+
+            coordinator.searchIndex = index
+
+            let selection = coordinator.searchResults[index]
+            container.pdfView.currentSelection = selection
+            container.pdfView.go(to: selection)
+        }
+    }
+
+    static func dismantleUIView(_ uiView: PDFContainerView, coordinator: Coordinator) {
+        NotificationCenter.default.removeObserver(
+            coordinator,
+            name: Notification.Name.PDFViewPageChanged,
+            object: uiView.pdfView
+        )
+    }
+}
+
+// MARK: - Article Extraction Cache
+
+final class ArticleExtractionCache {
+    static let shared = ArticleExtractionCache()
+
+    private let cache = NSCache<NSString, ArticleCacheEntry>()
+
+    private init() {
+        cache.countLimit = 5
+    }
+
+    func sections(for key: String) -> [PDFReaderView.ArticleSection]? {
+        cache.object(forKey: key as NSString)?.sections
+    }
+
+    func store(sections: [PDFReaderView.ArticleSection], for key: String) {
+        let entry = ArticleCacheEntry(sections: sections)
+        cache.setObject(entry, forKey: key as NSString)
+    }
+
+    private final class ArticleCacheEntry: NSObject {
+        let sections: [PDFReaderView.ArticleSection]
+
+        init(sections: [PDFReaderView.ArticleSection]) {
+            self.sections = sections
+        }
+    }
+}
+
+// MARK: - Preview
+
+#Preview {
+    NavigationStack {
+        MediaDetailView(
+            mediaItem: MediaItem(
+                fileName: "Sample",
+                fileExtension: ".jpg",
+                fileSize: 1_024_000,
+                type: .photo,
+                encryptedPath: "/path/to/file",
+                width: 1920,
+                height: 1080
+            )
+        )
+    }
+    .modelContainer(for: MediaItem.self, inMemory: true)
+}

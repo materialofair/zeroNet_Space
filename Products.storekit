@@ -1,0 +1,59 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "E7A7C0C9",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "3.99",
+      "familyShareable" : false,
+      "internalID" : "6738429518",
+      "localizations" : [
+        {
+          "description" : "Unlock unlimited photo, video, and file imports. One-time purchase, lifetime access.",
+          "displayName" : "Unlimited Imports",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "解锁无限照片、视频和文件导入。一次性购买，终身使用。",
+          "displayName" : "无限导入",
+          "locale" : "zh_Hans"
+        }
+      ],
+      "productID" : "com.zeronetspace.unlimited_imports",
+      "referenceName" : "Unlimited Imports",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_askToBuyEnabled" : false,
+    "_billingGracePeriodEnabled" : false,
+    "_billingIssuesEnabled" : false,
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_renewalBillingIssuesEnabled" : false,
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+
+    ],
+    "_timeRate" : 0
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
