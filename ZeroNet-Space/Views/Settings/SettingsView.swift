@@ -594,7 +594,7 @@ struct AboutView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     // 应用图标
-                    Image("AppIcon")
+                    Image("AppIconDisplay")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: 120, height: 120)
