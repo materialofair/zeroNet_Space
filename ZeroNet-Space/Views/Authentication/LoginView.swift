@@ -34,30 +34,29 @@ struct LoginView: View {
                 .ignoresSafeArea()
                 .opacity(colorScheme == .light ? 1 : 0.3)
 
-                ScrollView {
-                    VStack(spacing: 30) {
-                        // 头部图标
-                        headerSection
+                VStack(spacing: 24) {
+                    Spacer()
 
-                        // 密码输入区域
-                        passwordSection
+                    // 头部图标
+                    headerSection
 
-                        // 登录按钮
-                        loginButton
+                    // 密码输入区域
+                    passwordSection
 
-                        // 忘记密码提示
-                        forgotPasswordHint
+                    // 登录按钮
+                    loginButton
 
-                        Spacer()
-                    }
-                    .padding()
+                    // 隐私保护声明（紧凑版）
+                    privacyStatement
+
+                    Spacer()
+
+                    // 忘记密码提示（底部）
+                    forgotPasswordHint
                 }
+                .padding()
             }
             .navigationBarTitleDisplayMode(.inline)
-            .task {
-                // 立即聚焦密码输入框，无需延迟
-                isPasswordFocused = true
-            }
         }
         .loadingOverlay(
             isShowing: viewModel.isProcessing,
@@ -69,23 +68,22 @@ struct LoginView: View {
 
     /// 头部区域
     private var headerSection: some View {
-        VStack(spacing: 20) {
-            // 应用图标
+        VStack(spacing: 12) {
+            // 应用图标（缩小）
             Image("LoginHero")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(width: 160, height: 160)
-                .clipShape(RoundedRectangle(cornerRadius: 48, style: .continuous))
-                .shadow(color: .black.opacity(0.2), radius: 20, y: 10)
-                .padding(.top, 60)
+                .frame(width: 100, height: 100)
+                .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+                .shadow(color: .black.opacity(0.15), radius: 15, y: 8)
 
-            VStack(spacing: 8) {
+            VStack(spacing: 4) {
                 Text(String(localized: "login.title"))
-                    .font(.system(size: 36, weight: .bold))
+                    .font(.system(size: 28, weight: .bold))
                     .foregroundStyle(ColorTheme.primaryText)
 
                 Text(String(localized: "login.subtitle"))
-                    .font(.subheadline)
+                    .font(.caption)
                     .foregroundStyle(ColorTheme.secondaryText)
                     .multilineTextAlignment(.center)
             }
@@ -94,73 +92,71 @@ struct LoginView: View {
 
     /// 密码输入区域
     private var passwordSection: some View {
-        VStack(spacing: 20) {
-            VStack(alignment: .leading, spacing: 12) {
-                // 密码输入框
-                HStack {
-                    Image(systemName: "lock.fill")
+        VStack(alignment: .leading, spacing: 8) {
+            // 密码输入框
+            HStack {
+                Image(systemName: "lock.fill")
+                    .foregroundColor(.gray)
+                    .frame(width: 20)
+
+                if viewModel.showPassword {
+                    TextField(
+                        String(localized: "login.passwordPlaceholder"),
+                        text: $viewModel.password
+                    )
+                    .textContentType(.password)
+                    .focused($isPasswordFocused)
+                    .submitLabel(.go)
+                    .onSubmit {
+                        if viewModel.isLoginButtonEnabled {
+                            viewModel.login()
+                        }
+                    }
+                } else {
+                    SecureField(
+                        String(localized: "login.passwordPlaceholder"),
+                        text: $viewModel.password
+                    )
+                    .textContentType(.password)
+                    .focused($isPasswordFocused)
+                    .submitLabel(.go)
+                    .onSubmit {
+                        if viewModel.isLoginButtonEnabled {
+                            viewModel.login()
+                        }
+                    }
+                }
+
+                // 显示/隐藏密码按钮
+                Button(action: {
+                    viewModel.togglePasswordVisibility()
+                }) {
+                    Image(systemName: viewModel.showPassword ? "eye.slash.fill" : "eye.fill")
                         .foregroundColor(.gray)
-                        .frame(width: 20)
-
-                    if viewModel.showPassword {
-                        TextField(
-                            String(localized: "login.passwordPlaceholder"),
-                            text: $viewModel.password
-                        )
-                        .textContentType(.password)
-                        .focused($isPasswordFocused)
-                        .submitLabel(.go)
-                        .onSubmit {
-                            if viewModel.isLoginButtonEnabled {
-                                viewModel.login()
-                            }
-                        }
-                    } else {
-                        SecureField(
-                            String(localized: "login.passwordPlaceholder"),
-                            text: $viewModel.password
-                        )
-                        .textContentType(.password)
-                        .focused($isPasswordFocused)
-                        .submitLabel(.go)
-                        .onSubmit {
-                            if viewModel.isLoginButtonEnabled {
-                                viewModel.login()
-                            }
-                        }
-                    }
-
-                    // 显示/隐藏密码按钮
-                    Button(action: {
-                        viewModel.togglePasswordVisibility()
-                    }) {
-                        Image(systemName: viewModel.showPassword ? "eye.slash.fill" : "eye.fill")
-                            .foregroundColor(.gray)
-                    }
                 }
-                .padding()
-                .background(ColorTheme.secondaryBackground)
-                .cornerRadius(12)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(
-                            viewModel.errorMessage != nil
-                                ? ColorTheme.destructive : ColorTheme.border,
-                            lineWidth: 1)
-                )
+            }
+            .padding()
+            .background(ColorTheme.secondaryBackground)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(
+                        viewModel.errorMessage != nil
+                            ? ColorTheme.destructive : ColorTheme.border,
+                        lineWidth: 1)
+            )
 
-                // 错误消息
-                if let errorMessage = viewModel.errorMessage {
-                    HStack {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                        Text(errorMessage)
-                        Spacer()
-                    }
-                    .font(.caption)
-                    .foregroundStyle(ColorTheme.destructive)
-                    .padding(.horizontal, 4)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+            // 错误消息
+            if let errorMessage = viewModel.errorMessage {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                    Text(errorMessage)
+                    Spacer()
                 }
+                .font(.caption2)
+                .foregroundStyle(ColorTheme.destructive)
+                .padding(.horizontal, 4)
+                .transition(.move(edge: .top).combined(with: .opacity))
             }
         }
         .padding(.horizontal)
@@ -174,19 +170,19 @@ struct LoginView: View {
             isPasswordFocused = false  // 收起键盘
             viewModel.login()
         }) {
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 if viewModel.isProcessing {
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
                 } else {
                     Image(systemName: "arrow.right.circle.fill")
-                        .font(.title3)
+                        .font(.body)
                     Text(String(localized: "login.unlock"))
                         .fontWeight(.semibold)
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 56)
+            .frame(height: 50)
             .background(
                 viewModel.isLoginButtonEnabled
                     ? LinearGradient(
@@ -201,47 +197,92 @@ struct LoginView: View {
                     )
             )
             .foregroundColor(.white)
-            .cornerRadius(16)
+            .cornerRadius(14)
             .shadow(
                 color: viewModel.isLoginButtonEnabled ? .blue.opacity(0.3) : .clear,
-                radius: 10,
+                radius: 8,
                 x: 0,
-                y: 5
+                y: 4
             )
         }
         .disabled(!viewModel.isLoginButtonEnabled || viewModel.isProcessing)
         .padding(.horizontal)
-        .padding(.top, 10)
     }
 
-    /// 忘记密码提示
+    /// 忘记密码提示（紧凑版）
     private var forgotPasswordHint: some View {
-        VStack(spacing: 12) {
-            Divider()
-                .padding(.horizontal)
-
-            VStack(spacing: 8) {
-                HStack {
-                    Image(systemName: "info.circle.fill")
-                        .foregroundStyle(ColorTheme.warning)
-                    Text(String(localized: "login.forgotPassword"))
-                        .fontWeight(.medium)
-                        .foregroundStyle(ColorTheme.primaryText)
-                }
-                .font(.subheadline)
-
-                Text(String(localized: "login.forgotPasswordWarning"))
-                    .font(.caption)
+        VStack(spacing: 6) {
+            HStack(spacing: 4) {
+                Image(systemName: "info.circle.fill")
+                    .font(.caption2)
+                    .foregroundStyle(ColorTheme.warning)
+                Text(String(localized: "login.forgotPassword"))
+                    .font(.caption2)
+                    .fontWeight(.medium)
                     .foregroundStyle(ColorTheme.secondaryText)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding()
-            .background(ColorTheme.warning.opacity(0.1))
-            .cornerRadius(12)
-            .padding(.horizontal)
+
+            Text(String(localized: "login.forgotPasswordWarning"))
+                .font(.caption2)
+                .foregroundStyle(ColorTheme.secondaryText.opacity(0.8))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.top, 20)
+        .padding(.horizontal)
+    }
+
+    /// 隐私保护声明（紧凑版）
+    private var privacyStatement: some View {
+        VStack(spacing: 10) {
+            // 核心价值观 - 横向紧凑布局
+            HStack(spacing: 12) {
+                // 开源
+                HStack(spacing: 4) {
+                    Image(systemName: "chevron.left.forwardslash.chevron.right")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                    Text(String(localized: "login.privacy.opensource"))
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                }
+
+                Text("•")
+                    .foregroundStyle(ColorTheme.secondaryText.opacity(0.5))
+                    .font(.caption2)
+
+                // 零网络
+                HStack(spacing: 4) {
+                    Image(systemName: "network.slash")
+                        .font(.caption)
+                        .foregroundStyle(.purple)
+                    Text(String(localized: "login.privacy.zeronetwork"))
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                }
+
+                Text("•")
+                    .foregroundStyle(ColorTheme.secondaryText.opacity(0.5))
+                    .font(.caption2)
+
+                // 隐私优先
+                HStack(spacing: 4) {
+                    Image(systemName: "lock.shield.fill")
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                    Text(String(localized: "login.privacy.privacyfirst"))
+                        .font(.caption2)
+                        .fontWeight(.medium)
+                }
+            }
+            .foregroundStyle(ColorTheme.primaryText)
+
+            // 隐私承诺文字
+            Text(String(localized: "login.privacy.description"))
+                .font(.caption2)
+                .foregroundStyle(ColorTheme.secondaryText.opacity(0.8))
+                .multilineTextAlignment(.center)
+        }
+        .padding(.horizontal)
     }
 }
 

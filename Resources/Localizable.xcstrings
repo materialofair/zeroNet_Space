@@ -401,13 +401,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Disguise mode requires main password to contain only numbers and decimal point.\\n\\nCurrent password contains letters or special characters. Please change to numbers and decimal point only."
+            "value" : "Disguise mode requires main password to contain only numbers and decimal point. Current password contains letters or special characters. Please change to numbers and decimal point only."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "伪装模式要求主密码仅包含数字和小数点。\\n\\n当前主密码包含字母或特殊字符，请修改为仅包含数字和小数点的密码。"
+            "value" : "伪装模式要求主密码仅包含数字和小数点。当前主密码包含字母或特殊字符，请修改为仅包含数字和小数点的密码。"
           }
         }
       }
@@ -452,13 +452,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "After changing password, you'll need to use the new password for next login.\\n\\nEncrypted files will continue using the original key, no reencryption needed."
+            "value" : "After changing password, you'll need to use the new password for next login. Encrypted files will continue using the original key, no reencryption needed."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "修改主密码后，下次登录需要使用新密码。\\n\\n加密文件会继续使用最初设置的密钥，无需等待重新加密。"
+            "value" : "修改主密码后，下次登录需要使用新密码。加密文件会继续使用最初设置的密钥，无需等待重新加密。"
           }
         }
       }
@@ -911,13 +911,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "• Calculator interface is fully realistic and undetectable\\n• No calculation history is retained\\n• Please memorize your password sequence"
+            "value" : "• Calculator interface is fully realistic and undetectable • No calculation history is retained • Please memorize your password sequence"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "• 计算器界面完全真实，无法被识破\\n• 不会保留任何计算历史记录\\n• 请牢记您的密码序列"
+            "value" : "• 计算器界面完全真实，无法被识破 • 不会保留任何计算历史记录 • 请牢记您的密码序列"
           }
         }
       }
@@ -3214,13 +3214,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "For security reasons, the password cannot be reset.\\nYou need to uninstall and reinstall the app, but all data will be lost."
+            "value" : "For security reasons, the password cannot be reset. You need to uninstall and reinstall the app, but all data will be lost."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "由于安全原因，密码无法重置。\\n您需要卸载应用并重新安装，但所有数据将会丢失。"
+            "value" : "由于安全原因，密码无法重置。您需要卸载应用并重新安装，但所有数据将会丢失。"
           }
         }
       }
@@ -3311,6 +3311,96 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在验证密码..."
+          }
+        }
+      }
+    },
+    "login.privacy.opensource" : {
+      "comment" : "Open source label in privacy statement",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Source"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开源"
+          }
+        }
+      }
+    },
+    "login.privacy.zeronetwork" : {
+      "comment" : "Zero network label in privacy statement",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zero Network"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "零网络"
+          }
+        }
+      }
+    },
+    "login.privacy.privacyfirst" : {
+      "comment" : "Privacy first label in privacy statement",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy First"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隐私优先"
+          }
+        }
+      }
+    },
+    "login.privacy.title" : {
+      "comment" : "Privacy statement title",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Data, Only Yours"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的数据，只属于你"
+          }
+        }
+      }
+    },
+    "login.privacy.description" : {
+      "comment" : "Privacy statement description",
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Local Encrypted Storage • Zero Network Transfer • Open Source Auditable"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本地加密存储 • 零网络传输 • 开源可审计"
           }
         }
       }
@@ -5526,13 +5616,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "• iOS system file picker downloads\\n• Apple StoreKit in-app purchases\\n\\nThese are system-level operations required by iOS, not app networking."
+            "value" : "• iOS system file picker downloads • Apple StoreKit in-app purchases\n\nThese are system-level operations required by iOS, not app networking."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "• iOS系统文件选择器下载\\n• Apple StoreKit内购功能\\n\\n这些是iOS系统级操作要求，非应用联网。"
+            "value" : "• iOS系统文件选择器下载 • Apple StoreKit内购功能\n\n这些是iOS系统级操作要求，非应用联网。"
           }
         }
       }
@@ -6251,6 +6341,9 @@
         }
       }
     },
+    "Open Source · Zero Network" : {
+
+    },
     "photo.decrypting" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6369,6 +6462,9 @@
           }
         }
       }
+    },
+    "Privacy First" : {
+
     },
     "secondPassword.change" : {
       "extractionState" : "manual",
@@ -7260,13 +7356,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "© 2025 ZeroNet Space\\nTrue Offline Privacy Protection"
+            "value" : "© 2025 ZeroNet Space\nTrue Offline Privacy Protection"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "© 2025 ZeroNet Space\\n零网络空间 · 真正的离线隐私保护"
+            "value" : "© 2025 ZeroNet Space\n零网络空间 · 真正的离线隐私保护"
           }
         }
       }
