@@ -4,7 +4,7 @@
 
 **真正的离线隐私空间 | 100%开源 | 零网络 | 零追踪**
 
-[![Platform](https://img.shields.io/badge/Platform-iOS%2015.0+-lightgrey.svg)](https://www.apple.com/ios/)
+[![Platform](https://img.shields.io/badge/Platform-iOS%2017.0+-lightgrey.svg)](https://www.apple.com/ios/)
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)](https://swift.org)
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-3.0-blue.svg)](https://developer.apple.com/xcode/swiftui/)
 [![Security](https://img.shields.io/badge/Security-AES--256--GCM-green.svg)](https://en.wikipedia.org/wiki/Galois/Counter_Mode)
@@ -197,7 +197,13 @@ Privacy Manifest: ✅ Provided (PrivacyInfo.xcprivacy)
 - **Data Storage**: SwiftData + FileManager
 - **Encryption**: CryptoKit (AES-256-GCM)
 - **Password Management**: iOS Keychain + PBKDF2
-- **Minimum Support**: iOS 15.0+
+- **Minimum Support**: iOS 17.0+
+
+#### Compatible Devices
+- ✅ iPhone XS and newer (iPhone XS, XS Max, XR, 11, 12, 13, 14, 15, 16)
+- ✅ iPad (6th generation) and newer
+- ✅ iPad Air 2 and newer
+- ✅ iPad mini 4 and newer
 
 #### Architecture Features
 - ✅ MVVM architecture pattern
@@ -578,7 +584,13 @@ IV: 12字节随机（每次加密唯一）
 - **数据存储**: SwiftData + FileManager
 - **加密算法**: CryptoKit (AES-256-GCM)
 - **密码管理**: iOS Keychain + PBKDF2
-- **最低支持**: iOS 15.0+
+- **最低支持**: iOS 17.0+
+
+#### 兼容设备
+- ✅ iPhone XS 及以上（iPhone XS, XS Max, XR, 11, 12, 13, 14, 15, 16）
+- ✅ iPad（第6代）及以上
+- ✅ iPad Air 2 及以上
+- ✅ iPad mini 4 及以上
 
 #### 架构特点
 - ✅ MVVM架构模式
