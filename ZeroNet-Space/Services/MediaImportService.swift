@@ -57,7 +57,6 @@ class MediaImportService {
     // MARK: - Singleton
 
     static let shared = MediaImportService()
-    private init() {}
 
     // MARK: - Services
 
@@ -72,22 +71,25 @@ class MediaImportService {
     ///   - password: 加密密码
     ///   - progress: 进度回调
     /// - Returns: 导入成功的MediaItem数组
-    @MainActor
     func importMedia(
         from results: [PHPickerResult],
         password: String,
-        progress: @escaping (ImportProgress) -> Void
+        progress: @escaping (ImportProgress) -> Void = { _ in }
     ) async throws -> [MediaItem] {
         var importedItems: [MediaItem] = []
         let total = results.count
 
         for (index, result) in results.enumerated() {
+            try Task.checkCancellation()
+
             let currentProgress = ImportProgress(
                 current: index + 1,
                 total: total,
                 currentFileName: "媒体 \(index + 1)"
             )
-            progress(currentProgress)
+            await MainActor.run {
+                progress(currentProgress)
+            }
 
             do {
                 if let item = try await importSingleMedia(result: result, password: password) {
@@ -109,22 +111,25 @@ class MediaImportService {
     ///   - password: 加密密码
     ///   - progress: 进度回调
     /// - Returns: 导入成功的MediaItem数组
-    @MainActor
     func importFiles(
         from urls: [URL],
         password: String,
-        progress: @escaping (ImportProgress) -> Void
+        progress: @escaping (ImportProgress) -> Void = { _ in }
     ) async throws -> [MediaItem] {
         var importedItems: [MediaItem] = []
         let total = urls.count
 
         for (index, url) in urls.enumerated() {
+            try Task.checkCancellation()
+
             let currentProgress = ImportProgress(
                 current: index + 1,
                 total: total,
                 currentFileName: url.lastPathComponent
             )
-            progress(currentProgress)
+            await MainActor.run {
+                progress(currentProgress)
+            }
 
             // 开始访问安全作用域资源
             guard url.startAccessingSecurityScopedResource() else {
@@ -140,6 +145,9 @@ class MediaImportService {
                     importedItems.append(item)
                 }
             } catch {
+                if error is CancellationError {
+                    throw error
+                }
                 print("⚠️ 导入文件失败: \(error)")
                 // 继续导入其他文件
             }
@@ -274,27 +282,45 @@ class MediaImportService {
 
     /// 导入单个文件
     private func importSingleFile(url: URL, password: String) async throws -> MediaItem? {
-        // 读取文件数据
-        let data = try Data(contentsOf: url)
+        try Task.checkCancellation()
+
         let fileName = url.deletingPathExtension().lastPathComponent
         let fileExtension = "." + url.pathExtension
-        let fileSize = Int64(data.count)
+        let attributes = try FileManager.default.attributesOfItem(atPath: url.path)
+        let fileSize = attributes[.size] as? Int64 ?? 0
 
-        // 判断媒体类型
         let mediaType = MediaType.from(fileExtension: url.pathExtension)
 
-        // 加密文件
-        let encryptedData = try encryptionService.encrypt(data: data, password: password)
+        // 针对视频文件走专用处理流程，保证缩略图与元数据一致
+        if mediaType == .video {
+            return try await processVideo(url, password: password)
+        }
 
-        // 保存加密文件
-        let encryptedPath = try storageService.saveEncrypted(
-            data: encryptedData, originalFileName: url.lastPathComponent)
+        var encryptedPath: String
+        var thumbnailData: Data?
 
-        // 生成缩略图
-        let thumbnailData = generateThumbnail(
-            for: data, type: mediaType, fileExtension: url.pathExtension)
+        if mediaType == .photo {
+            let data = try Data(contentsOf: url)
+            try Task.checkCancellation()
+            let encryptedData = try encryptionService.encrypt(data: data, password: password)
+            encryptedPath = try storageService.saveEncrypted(
+                data: encryptedData,
+                originalFileName: url.lastPathComponent
+            )
+            thumbnailData = generateThumbnail(
+                for: data,
+                type: mediaType,
+                fileExtension: url.pathExtension
+            )
+        } else {
+            encryptedPath = try storageService.saveEncryptedFile(
+                from: url,
+                password: password,
+                originalFileName: url.lastPathComponent
+            )
+            thumbnailData = nil
+        }
 
-        // 创建MediaItem
         let mediaItem = MediaItem(
             fileName: fileName,
             fileExtension: fileExtension,
@@ -312,6 +338,7 @@ class MediaImportService {
 
     /// 处理图片
     private func processImage(_ image: UIImage, password: String) async throws -> MediaItem {
+        try Task.checkCancellation()
         // 转换为JPEG数据
         guard let imageData = image.jpegData(compressionQuality: 0.9) else {
             throw ImportError.loadFailed
@@ -357,6 +384,7 @@ class MediaImportService {
 
     /// 处理视频
     private func processVideo(_ url: URL, password: String) async throws -> MediaItem {
+        try Task.checkCancellation()
         // ⚠️ 重要: 必须先提取元数据和缩略图，再读取数据
         // 因为临时 URL 可能在读取数据后就失效
 

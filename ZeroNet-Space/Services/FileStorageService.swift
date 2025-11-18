@@ -127,8 +127,7 @@ class FileStorageService {
     /// - Returns: 加密的数据
     /// - Throws: FileStorageError
     func loadEncrypted(path: String) throws -> Data {
-        // 将相对路径转换为完整路径
-        let fileURL = storageDirectory.appendingPathComponent(path)
+        let fileURL = getFileURL(for: path)
 
         // 检查文件是否存在
         guard fileManager.fileExists(atPath: fileURL.path) else {
@@ -153,8 +152,7 @@ class FileStorageService {
     /// - Parameter path: 文件相对路径（文件名）
     /// - Throws: FileStorageError
     func deleteFile(path: String) throws {
-        // 将相对路径转换为完整路径
-        let fileURL = storageDirectory.appendingPathComponent(path)
+        let fileURL = getFileURL(for: path)
 
         // 检查文件是否存在
         guard fileManager.fileExists(atPath: fileURL.path) else {
@@ -176,8 +174,7 @@ class FileStorageService {
     /// - Parameter path: 文件相对路径（文件名）
     /// - Returns: 文件大小（字节）
     func getFileSize(path: String) -> Int64? {
-        // 将相对路径转换为完整路径
-        let fileURL = storageDirectory.appendingPathComponent(path)
+        let fileURL = getFileURL(for: path)
 
         do {
             let attributes = try fileManager.attributesOfItem(atPath: fileURL.path)
@@ -191,7 +188,7 @@ class FileStorageService {
     /// - Parameter path: 文件相对路径（文件名）
     /// - Returns: 是否存在
     func fileExists(path: String) -> Bool {
-        let fileURL = storageDirectory.appendingPathComponent(path)
+        let fileURL = getFileURL(for: path)
         return fileManager.fileExists(atPath: fileURL.path)
     }
 
@@ -214,8 +211,9 @@ class FileStorageService {
             )
 
             for fileURL in fileURLs {
-                if let fileSize = getFileSize(path: fileURL.path) {
-                    totalSize += fileSize
+                let resources = try fileURL.resourceValues(forKeys: [.fileSizeKey])
+                if let fileSize = resources.fileSize {
+                    totalSize += Int64(fileSize)
                 }
             }
         } catch {
@@ -241,7 +239,7 @@ class FileStorageService {
                     $0.pathExtension
                         == fileExtension.trimmingCharacters(in: CharacterSet(charactersIn: "."))
                 }
-                .map { $0.path }
+                .map { $0.lastPathComponent }
         } catch {
             print("❌ 获取文件列表失败: \(error)")
             return []

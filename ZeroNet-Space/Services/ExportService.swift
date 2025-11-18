@@ -17,6 +17,7 @@ enum ExportError: Error {
     case exportFailed  // 导出失败
     case invalidPassword  // 密码无效
     case tempDirectoryError  // 临时目录错误
+    case cancelled  // 用户取消
 
     var localizedDescription: String {
         switch self {
@@ -30,6 +31,8 @@ enum ExportError: Error {
             return AppConstants.ErrorMessages.passwordIncorrect
         case .tempDirectoryError:
             return String(localized: "exportError.tempDirectory")
+        case .cancelled:
+            return String(localized: "importError.cancelled")
         }
     }
 }
@@ -41,6 +44,9 @@ class ExportService {
 
     private let encryptionService = EncryptionService.shared
     private let fileStorageService = FileStorageService.shared
+    private let exportQueue = DispatchQueue(label: "com.zeronetspace.export", qos: .userInitiated)
+    private let workItemLock = NSLock()
+    private var currentExportWorkItem: DispatchWorkItem?
 
     private init() {}
 
@@ -63,20 +69,25 @@ class ExportService {
             return
         }
 
-        // 在后台线程执行导出
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self else { return }
+        cancelCurrentExport()
+
+        var workItem: DispatchWorkItem?
+        workItem = DispatchWorkItem { [weak self] in
+            guard let self, let workItem else { return }
+
+            let result: Result<[URL], ExportError>
 
             do {
-                // 创建临时导出目录
                 let exportDirectory = try self.createExportDirectory()
-
                 var exportedURLs: [URL] = []
                 let totalCount = items.count
                 var processedCount = 0
 
-                // 逐个解密并导出文件
                 for item in items {
+                    if workItem.isCancelled {
+                        throw ExportError.cancelled
+                    }
+
                     let exportedURL = try self.exportSingleItem(
                         item,
                         to: exportDirectory,
@@ -92,21 +103,29 @@ class ExportService {
                     }
                 }
 
-                // 成功回调
-                DispatchQueue.main.async {
-                    completion(.success(exportedURLs))
-                }
-
+                result = .success(exportedURLs)
             } catch let error as ExportError {
-                DispatchQueue.main.async {
-                    completion(.failure(error))
-                }
+                result = .failure(error)
             } catch {
+                result = .failure(.exportFailed)
+            }
+
+            if workItem.isCancelled {
                 DispatchQueue.main.async {
-                    completion(.failure(.exportFailed))
+                    completion(.failure(.cancelled))
                 }
+                return
+            }
+
+            DispatchQueue.main.async {
+                completion(result)
             }
         }
+
+        guard let workItem else { return }
+
+        setCurrentWorkItem(workItem)
+        exportQueue.async(execute: workItem)
     }
 
     /// 清理临时导出文件
@@ -122,6 +141,15 @@ class ExportService {
         } catch {
             print("❌ 清理导出临时文件失败: \(error)")
         }
+    }
+
+    /// 取消当前导出任务
+    func cancelCurrentExport() {
+        workItemLock.lock()
+        let workItem = currentExportWorkItem
+        currentExportWorkItem = nil
+        workItemLock.unlock()
+        workItem?.cancel()
     }
 
     // MARK: - Private Methods
@@ -174,6 +202,29 @@ class ExportService {
 
         print("✅ 导出文件: \(fileName)")
         return exportURL
+    }
+}
+
+// MARK: - Private Helpers
+
+extension ExportService {
+    private func setCurrentWorkItem(_ workItem: DispatchWorkItem) {
+        workItem.notify(queue: .main) { [weak self, weak workItem] in
+            guard let self, let workItem else { return }
+            self.clearWorkItemIfNeeded(workItem)
+        }
+
+        workItemLock.lock()
+        currentExportWorkItem = workItem
+        workItemLock.unlock()
+    }
+
+    private func clearWorkItemIfNeeded(_ workItem: DispatchWorkItem) {
+        workItemLock.lock()
+        if currentExportWorkItem === workItem {
+            currentExportWorkItem = nil
+        }
+        workItemLock.unlock()
     }
 }
 

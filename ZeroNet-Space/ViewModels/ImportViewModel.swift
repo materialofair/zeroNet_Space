@@ -55,6 +55,8 @@ class ImportViewModel: ObservableObject {
     /// 认证视图模型（用于获取会话密码）
     var authViewModel: AuthenticationViewModel?
 
+    private var currentImportTask: Task<Void, Never>?
+
     // MARK: - Import Limit Checking
 
     /// 获取当前导入总数（照片+视频+文件）
@@ -109,55 +111,24 @@ class ImportViewModel: ObservableObject {
     /// 从照片库导入
     func importFromPhotoLibrary(results: [PHPickerResult]) {
         guard !isImporting else { return }
+        guard !results.isEmpty else { return }
+
+        guard checkImportLimit(itemCount: results.count) else {
+            return
+        }
 
         errorMessage = nil
         isImporting = true
         importedCount = 0
 
-        Task {
-            do {
-                // 获取用户密码（这里使用一个临时方案，实际应该从认证系统获取）
-                // TODO: 从AuthenticationViewModel获取当前会话密码
-                guard let password = await getCurrentPassword() else {
-                    throw ImportError.permissionDenied
-                }
-
-                // 导入媒体
-                let items = try await importService.importMedia(
-                    from: results,
-                    password: password
-                ) { [weak self] progress in
+        startImportTask {
+            try await self.importService.importMedia(
+                from: results,
+                password: $0
+            ) { [weak self] progress in
+                DispatchQueue.main.async {
                     self?.importProgress = progress
                 }
-
-                // 保存到SwiftData
-                print("💾 准备保存到 SwiftData...")
-                print("📊 ModelContext 状态: \(modelContext != nil ? "已设置" : "未设置")")
-
-                for item in items {
-                    modelContext?.insert(item)
-                }
-
-                try? modelContext?.save()
-
-                print("✅ 数据已成功保存: \(items.count) 个项目")
-
-                importedCount = items.count
-                importProgress = nil
-                isImporting = false
-
-                // 通知完成
-                onImportComplete?(items)
-
-                print("✅ 导入完成: \(items.count) 个媒体文件")
-
-            } catch {
-                errorMessage = String(
-                    format: String(localized: "import.error.failedWithReason"),
-                    error.localizedDescription)
-                importProgress = nil
-                isImporting = false
-                print("❌ 导入失败: \(error)")
             }
         }
     }
@@ -165,54 +136,24 @@ class ImportViewModel: ObservableObject {
     /// 从文件导入
     func importFromFiles(urls: [URL]) {
         guard !isImporting else { return }
+        guard !urls.isEmpty else { return }
+
+        guard checkImportLimit(itemCount: urls.count) else {
+            return
+        }
 
         errorMessage = nil
         isImporting = true
         importedCount = 0
 
-        Task {
-            do {
-                // 获取用户密码
-                guard let password = await getCurrentPassword() else {
-                    throw ImportError.permissionDenied
-                }
-
-                // 导入文件
-                let items = try await importService.importFiles(
-                    from: urls,
-                    password: password
-                ) { [weak self] progress in
+        startImportTask {
+            try await self.importService.importFiles(
+                from: urls,
+                password: $0
+            ) { [weak self] progress in
+                DispatchQueue.main.async {
                     self?.importProgress = progress
                 }
-
-                // 保存到SwiftData
-                print("💾 准备保存文件到 SwiftData...")
-                print("📊 ModelContext 状态: \(modelContext != nil ? "已设置" : "未设置")")
-
-                for item in items {
-                    modelContext?.insert(item)
-                }
-
-                try? modelContext?.save()
-
-                print("✅ 文件数据已成功保存: \(items.count) 个项目")
-
-                importedCount = items.count
-                importProgress = nil
-                isImporting = false
-
-                // 通知完成
-                onImportComplete?(items)
-
-                print("✅ 导入完成: \(items.count) 个文件")
-
-            } catch {
-                errorMessage = String(
-                    format: String(localized: "import.error.failedWithReason"),
-                    error.localizedDescription)
-                importProgress = nil
-                isImporting = false
-                print("❌ 导入失败: \(error)")
             }
         }
     }
@@ -229,6 +170,8 @@ class ImportViewModel: ObservableObject {
 
     /// 取消导入
     func cancelImport() {
+        currentImportTask?.cancel()
+        currentImportTask = nil
         isImporting = false
         importProgress = nil
         errorMessage = nil
@@ -240,6 +183,58 @@ class ImportViewModel: ObservableObject {
     /// 从AuthenticationViewModel获取会话中的密码
     private func getCurrentPassword() async -> String? {
         return authViewModel?.sessionPassword
+    }
+
+    /// 统一封装导入流程，负责密码获取、任务管理与状态更新
+    private func startImportTask(
+        operation: @escaping (_ password: String) async throws -> [MediaItem]
+    ) {
+        currentImportTask?.cancel()
+
+        currentImportTask = Task { [weak self] in
+            guard let self else { return }
+            await self.performImport(operation: operation)
+        }
+    }
+
+    @MainActor
+    private func performImport(
+        operation: @escaping (_ password: String) async throws -> [MediaItem]
+    ) async {
+        do {
+            guard let password = await getCurrentPassword() else {
+                throw ImportError.permissionDenied
+            }
+
+            let items = try await operation(password)
+
+            for item in items {
+                modelContext?.insert(item)
+            }
+
+            try? modelContext?.save()
+
+            importedCount = items.count
+            importProgress = nil
+            isImporting = false
+
+            onImportComplete?(items)
+
+            print("✅ 导入完成: \(items.count) 个项目")
+        } catch is CancellationError {
+            errorMessage = nil
+            importProgress = nil
+            isImporting = false
+        } catch {
+            errorMessage = String(
+                format: String(localized: "import.error.failedWithReason"),
+                error.localizedDescription)
+            importProgress = nil
+            isImporting = false
+            print("❌ 导入失败: \(error)")
+        }
+
+        currentImportTask = nil
     }
 }
 

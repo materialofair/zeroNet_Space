@@ -26,6 +26,7 @@ struct BatchExportView: View {
     @State private var exportTotalCount: Int = 0
     @State private var exportedCount: Int = 0
     @State private var exportStatusText: String = ""
+    @State private var exportErrorWasCancellation: Bool = false
 
     private let exportService = ExportService.shared
 
@@ -43,9 +44,12 @@ struct BatchExportView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "common.cancel")) {
-                        dismiss()
+                        if isExporting {
+                            cancelExportOperation()
+                        } else {
+                            dismiss()
+                        }
                     }
-                    .disabled(isExporting)
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
@@ -61,7 +65,7 @@ struct BatchExportView: View {
             .alert(String(localized: "export.failed"), isPresented: $showError) {
                 Button(String(localized: "common.ok"), role: .cancel) {}
             } message: {
-                if let error = errorMessage {
+                if let error = errorMessage, !exportErrorWasCancellation {
                     Text(error)
                 }
             }
@@ -222,6 +226,8 @@ struct BatchExportView: View {
         }
 
         // 执行导出
+        exportErrorWasCancellation = false
+
         exportService.exportItems(
             itemsToExport,
             password: password,
@@ -255,8 +261,13 @@ struct BatchExportView: View {
                 exportedCount = 0
                 exportTotalCount = 0
                 exportStatusText = ""
-                errorMessage = error.localizedDescription
-                showError = true
+                if case .cancelled = error {
+                    exportErrorWasCancellation = true
+                } else {
+                    exportErrorWasCancellation = false
+                    errorMessage = error.localizedDescription
+                    showError = true
+                }
             }
         }
     }
@@ -264,6 +275,17 @@ struct BatchExportView: View {
     private var exportProgressValue: Double {
         guard exportTotalCount > 0 else { return 0 }
         return Double(exportedCount) / Double(exportTotalCount)
+    }
+}
+
+extension BatchExportView {
+    private func cancelExportOperation() {
+        exportService.cancelCurrentExport()
+        exportErrorWasCancellation = true
+        exportStatusText = ""
+        exportedCount = 0
+        exportTotalCount = 0
+        isExporting = false
     }
 }
 
