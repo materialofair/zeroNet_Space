@@ -594,22 +594,13 @@ struct AboutView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     // 应用图标
-                    ZStack {
-                        Circle()
-                            .fill(
-                                LinearGradient(
-                                    colors: [.blue, .purple],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .frame(width: 120, height: 120)
-
-                        Image(systemName: "lock.shield.fill")
-                            .font(.system(size: 60))
-                            .foregroundColor(.white)
-                    }
-                    .padding(.top, 40)
+                    Image("AppIcon")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 120, height: 120)
+                        .clipShape(RoundedRectangle(cornerRadius: 26.4, style: .continuous))
+                        .shadow(color: .black.opacity(0.2), radius: 15, y: 8)
+                        .padding(.top, 40)
 
                     // 应用名称
                     VStack(spacing: 8) {
