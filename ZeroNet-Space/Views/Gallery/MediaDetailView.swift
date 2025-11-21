@@ -37,6 +37,13 @@ struct MediaDetailView: View {
     // 文档临时文件管理（用于QuickLook预览）
     @State private var documentTempURL: URL?
 
+    // 分享功能
+    @State private var showShareSheet = false
+    @State private var exportedURLs: [URL] = []
+    @State private var isExporting = false
+    @State private var exportError: String?
+    @State private var showAlert = false
+
     // MARK: - Services
 
     private let storageService = FileStorageService.shared
@@ -88,6 +95,25 @@ struct MediaDetailView: View {
         .safeAreaInset(edge: .top) {
             topTitleBar
         }
+        .sheet(
+            isPresented: $showShareSheet,
+            onDismiss: {
+                exportedURLs.removeAll()
+            }
+        ) {
+            ShareSheet(items: exportedURLs)
+        }
+        .alert(String(localized: "filePreview.alert.title"), isPresented: $showAlert) {
+            Button(String(localized: "common.ok"), role: .cancel) {}
+        } message: {
+            if let error = exportError {
+                Text(error)
+            }
+        }
+        .loadingOverlay(
+            isShowing: isExporting,
+            message: String(localized: "filePreview.exporting")
+        )
     }
 
     // MARK: - Loading View
@@ -280,7 +306,7 @@ struct MediaDetailView: View {
 
     private func pdfDocumentView(data: Data) -> some View {
         // PDF阅读器全屏显示，不添加额外的信息栏
-        PDFReaderView(data: data)
+        PDFReaderView(data: data, onShare: shareMedia)
             .ignoresSafeArea()
     }
 
@@ -446,14 +472,39 @@ struct MediaDetailView: View {
                 return
             }
 
+            // 检查文件加密格式（流式加密 vs 标准加密）
+            let fileURL = storageService.getFileURL(for: mediaItem.encryptedPath)
             let encryptedData = try storageService.loadEncrypted(path: mediaItem.encryptedPath)
             print("📊 加密数据大小: \(encryptedData.count) bytes")
 
-            // 解密
-            print("🔓 正在解密...")
-            let data = try encryptionService.decrypt(
-                encryptedData: encryptedData, password: password)
-            print("✅ 解密成功，数据大小: \(data.count) bytes")
+            // 检查是否为流式加密（ZNSC魔数）
+            let chunkMagic = "ZNSC".data(using: .utf8)!
+            let isStreamEncrypted = encryptedData.count > 4 && encryptedData.prefix(4) == chunkMagic
+
+            print("🔍 加密格式检测: \(isStreamEncrypted ? "流式加密" : "标准加密")")
+
+            let data: Data
+            if isStreamEncrypted {
+                // 使用流式解密
+                print("🔓 使用流式解密...")
+                let tempDecryptURL = FileManager.default.temporaryDirectory
+                    .appendingPathComponent(UUID().uuidString + mediaItem.fileExtension)
+
+                try encryptionService.decryptFile(
+                    inputURL: fileURL,
+                    to: tempDecryptURL,
+                    password: password
+                )
+                data = try Data(contentsOf: tempDecryptURL)
+                try? FileManager.default.removeItem(at: tempDecryptURL)
+                print("✅ 流式解密成功，数据大小: \(data.count) bytes")
+            } else {
+                // 使用标准解密
+                print("🔓 使用标准解密...")
+                data = try encryptionService.decrypt(
+                    encryptedData: encryptedData, password: password)
+                print("✅ 标准解密成功，数据大小: \(data.count) bytes")
+            }
 
             await MainActor.run {
                 self.decryptedData = data
@@ -468,6 +519,31 @@ struct MediaDetailView: View {
             }
             print("❌ 媒体加载失败: \(error)")
             print("❌ 错误详情: \(error.localizedDescription)")
+        }
+    }
+
+    /// 分享媒体
+    private func shareMedia() {
+        guard !isExporting else { return }
+        guard let password = authViewModel.sessionPassword, !password.isEmpty else {
+            exportError = String(localized: "filePreview.error.noPassword")
+            showAlert = true
+            return
+        }
+
+        isExporting = true
+        exportError = nil
+
+        ExportService.shared.exportItems([mediaItem], password: password) { result in
+            switch result {
+            case .success(let urls):
+                exportedURLs = urls
+                showShareSheet = true
+            case .failure(let error):
+                exportError = error.localizedDescription
+                showAlert = true
+            }
+            isExporting = false
         }
     }
 
@@ -589,12 +665,23 @@ struct MediaDetailView: View {
 
                 Spacer()
 
+                // 分享按钮
+                Button {
+                    shareMedia()
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.title3)
+                        .foregroundColor(.white)
+                        .frame(width: 32, height: 32)
+                }
+
                 Button(role: .destructive) {
                     showDeleteConfirmation = true
                 } label: {
                     Image(systemName: "trash")
                         .font(.title3)
                         .foregroundColor(.white)
+                        .frame(width: 32, height: 32)
                 }
             }
             .padding(.horizontal, 20)

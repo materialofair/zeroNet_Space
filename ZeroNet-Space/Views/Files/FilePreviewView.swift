@@ -114,7 +114,7 @@ struct FilePreviewView: View {
     private var pdfPreview: some View {
         Group {
             if let data = pdfData {
-                PDFReaderView(data: data)
+                PDFReaderView(data: data, onShare: shareFile)
             } else if isPdfLoading {
                 VStack(spacing: 16) {
                     ProgressView()

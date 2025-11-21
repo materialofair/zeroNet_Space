@@ -11,6 +11,7 @@ import SwiftUI
 
 struct PDFReaderView: View {
     let data: Data
+    var onShare: (() -> Void)?
 
     @State private var pdfDocument: PDFDocument?
     @State private var currentPageIndex: Int = 0
@@ -18,8 +19,9 @@ struct PDFReaderView: View {
     @State private var showControls: Bool = true
     @State private var autoHideTask: Task<Void, Never>?
 
-    init(data: Data) {
+    init(data: Data, onShare: (() -> Void)? = nil) {
         self.data = data
+        self.onShare = onShare
         _pdfDocument = State(initialValue: PDFDocument(data: data))
     }
 
@@ -74,6 +76,18 @@ struct PDFReaderView: View {
                 .cornerRadius(8)
 
             Spacer()
+
+            // 分享按钮
+            if let onShare = onShare {
+                Button(action: onShare) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.title3)
+                        .foregroundColor(.white)
+                        .padding(10)
+                        .background(Color.white.opacity(0.15))
+                        .clipShape(Circle())
+                }
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
