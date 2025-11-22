@@ -24,6 +24,37 @@ enum AppConstants {
     /// GitHub仓库地址
     static let githubRepositoryURL = "https://github.com/materialofair/zeroNet_Space"
 
+    // MARK: - Demo Mode (For App Store Review)
+
+    /// 演示模式密码（用于App Store审核）
+    /// ⚠️ 在审核说明中告知审核团队使用此密码即可解锁所有功能
+    static let demoPassword = "AppleReview2025"
+
+    /// 演示模式UserDefaults键
+    private static let demoModeKey = "DemoModeEnabled"
+
+    /// 检查是否启用演示模式
+    static var isDemoModeEnabled: Bool {
+        UserDefaults.standard.bool(forKey: demoModeKey)
+    }
+
+    /// 检查密码是否为演示密码
+    static func isDemoPassword(_ password: String) -> Bool {
+        return password == demoPassword
+    }
+
+    /// 启用演示模式
+    static func enableDemoMode() {
+        UserDefaults.standard.set(true, forKey: demoModeKey)
+        print("🎭 演示模式已启用 - 所有高级功能已解锁")
+    }
+
+    /// 禁用演示模式
+    static func disableDemoMode() {
+        UserDefaults.standard.set(false, forKey: demoModeKey)
+        print("🎭 演示模式已禁用")
+    }
+
     // MARK: - Security
 
     /// 最小密码长度
@@ -135,6 +166,9 @@ extension AppConstants {
 
         /// 访客模式启用状态
         static let guestModeEnabled = "guestModeEnabled"
+
+        /// 应用已完成初始化（用于检测卸载重装）
+        static let appInitialized = "appInitialized"
     }
 }
 

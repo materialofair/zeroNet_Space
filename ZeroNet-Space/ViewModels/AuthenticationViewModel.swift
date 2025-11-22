@@ -84,6 +84,7 @@ final class AuthenticationViewModel: ObservableObject {
     // MARK: - Initialization
 
     init() {
+        detectAndClearOrphanedKeychain()
         checkPasswordStatus()
         setupNotificationObservers()
     }
@@ -141,6 +142,25 @@ final class AuthenticationViewModel: ObservableObject {
 
     // MARK: - Public Methods
 
+    /// 检测并清理孤立的Keychain数据（卸载重装场景）
+    private func detectAndClearOrphanedKeychain() {
+        let defaults = UserDefaults.standard
+        let isAppInitialized = defaults.bool(forKey: AppConstants.UserDefaultsKeys.appInitialized)
+        let hasKeychainPassword = keychainService.isPasswordSet()
+
+        // 如果应用未初始化但Keychain有密码 → 说明是卸载重装 → 清空Keychain
+        if !isAppInitialized && hasKeychainPassword {
+            print("🔄 检测到卸载重装，清空旧的Keychain数据")
+            keychainService.clearAllKeychainData()
+        }
+
+        // 如果是全新安装，设置初始化标记
+        if !isAppInitialized {
+            defaults.set(true, forKey: AppConstants.UserDefaultsKeys.appInitialized)
+            print("✅ 应用初始化标记已设置")
+        }
+    }
+
     /// 检查密码设置状态
     func checkPasswordStatus() {
         isPasswordSet = keychainService.isPasswordSet()
@@ -169,6 +189,9 @@ final class AuthenticationViewModel: ObservableObject {
 
         isProcessing = true
 
+        // 检查是否为演示密码
+        let isDemoPassword = AppConstants.isDemoPassword(password)
+
         // 异步保存密码
         Task {
             do {
@@ -179,9 +202,20 @@ final class AuthenticationViewModel: ObservableObject {
                 sessionLoginPassword = password
                 isPasswordSet = true
                 isAuthenticated = true
+
+                // 设置为主人模式（首次设置密码后直接进入主页）
+                GuestModeManager.shared.setAuthenticationMode(.owner)
+
+                // 🎭 如果是演示密码，启用演示模式并解锁所有功能
+                if isDemoPassword {
+                    AppConstants.enableDemoMode()
+                    AppSettings.shared.hasUnlockedUnlimited = true
+                    print("🎭 检测到演示密码 - 已自动启用演示模式并解锁所有功能")
+                }
+
                 clearFields()
 
-                print("✅ 密码设置成功")
+                print("✅ 密码设置成功，已自动登录")
             } catch {
                 errorMessage = String(
                     format: String(localized: "auth.error.savePasswordFailed"),
@@ -264,6 +298,13 @@ final class AuthenticationViewModel: ObservableObject {
 
                     // 设置为主人模式
                     GuestModeManager.shared.setAuthenticationMode(.owner)
+
+                    // 🎭 如果是演示密码，启用演示模式并解锁所有功能
+                    if AppConstants.isDemoPassword(inputPassword) {
+                        AppConstants.enableDemoMode()
+                        AppSettings.shared.hasUnlockedUnlimited = true
+                        print("🎭 检测到演示密码登录 - 已自动启用演示模式并解锁所有功能")
+                    }
 
                     // ✅ 登录成功，重置失败计数
                     failedAttempts = 0

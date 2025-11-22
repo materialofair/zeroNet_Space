@@ -110,12 +110,19 @@ class AppSettings: ObservableObject {
         self.guestModeEnabled = defaults.bool(
             forKey: AppConstants.UserDefaultsKeys.guestModeEnabled)
 
+        // 🎭 检查演示模式状态，如果已启用则自动解锁功能
+        if AppConstants.isDemoModeEnabled {
+            self.hasUnlockedUnlimited = true
+            print("🎭 检测到演示模式已启用 - 自动解锁所有功能")
+        }
+
         print("⚙️ 应用设置已加载")
         print("   - 排序: \(sortOrder.rawValue)")
         print("   - 网格列数: \(gridColumns)")
         print("   - 首次启动: \(isFirstLaunch)")
         print("   - 无限导入: \(hasUnlockedUnlimited ? "已解锁" : "未解锁")")
         print("   - 访客模式: \(guestModeEnabled ? "已启用" : "未启用")")
+        print("   - 演示模式: \(AppConstants.isDemoModeEnabled ? "已启用" : "未启用")")
     }
 
     // MARK: - Public Methods
