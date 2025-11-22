@@ -154,23 +154,44 @@ class CalculatorViewModel: ObservableObject {
         // 拼接输入历史（仅包含数字和小数点）
         let passwordInput = state.inputHistory.joined()
 
-        print("🔍 检查密码序列: '\(passwordInput)' vs '\(passwordSequence)'")
+        // 检查访客密码是否已设置
+        let hasGuestPassword = keychainService.isGuestPasswordSet()
 
-        // 检查是否匹配
+        print("🔍 检查密码序列: '\(passwordInput)'")
+        print("   主密码序列: '\(passwordSequence)'")
+        print("   访客密码已设置: \(hasGuestPassword)")
+
+        // 检查是否匹配主密码
         if passwordInput == passwordSequence {
-            print("🔓 密码匹配！准备解锁...")
+            print("🔓 主密码匹配！准备解锁到主人模式...")
             shouldUnlock = true
-
-            // 立即清空历史（防止再次触发）
             state.inputHistory.removeAll()
 
-            // 延迟0.3秒解锁（让用户看到计算结果）
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                // 通知 AuthenticationViewModel 解锁
-                NotificationCenter.default.post(name: .unlockFromDisguise, object: nil)
+                // 通知解锁到主人模式，传递密码用于后续验证
+                NotificationCenter.default.post(
+                    name: .unlockFromDisguise,
+                    object: nil,
+                    userInfo: ["mode": "owner", "password": passwordInput]
+                )
+            }
+        }
+        // 检查是否匹配访客密码（通过KeychainService验证）
+        else if hasGuestPassword && keychainService.verifyGuestPassword(passwordInput) {
+            print("🔓 访客密码匹配！准备解锁到访客模式...")
+            shouldUnlock = true
+            state.inputHistory.removeAll()
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                // 通知解锁到访客模式，传递密码用于后续验证
+                NotificationCenter.default.post(
+                    name: .unlockFromDisguise,
+                    object: nil,
+                    userInfo: ["mode": "guest", "password": passwordInput]
+                )
             }
         } else {
-            // 密码不匹配，清空历史（不保留历史记录）
+            // 密码不匹配，清空历史
             state.inputHistory.removeAll()
         }
     }

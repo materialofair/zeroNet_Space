@@ -18,8 +18,6 @@ struct DisguiseSettingsView: View {
 
     private let keychainService = KeychainService.shared
 
-    @State private var showPasswordInput = false
-    @State private var showDisguiseWarning = false
     @State private var showPasswordChangeRequired = false
     @State private var hasDisguisePassword: Bool = false
 
@@ -40,38 +38,41 @@ struct DisguiseSettingsView: View {
             }
 
             if disguiseModeEnabled {
-                // 密码序列设置
+                // 密码序列状态（只读显示）
                 Section {
                     HStack {
                         Text(String(localized: "disguise.passwordSequence"))
                         Spacer()
                         if hasDisguisePassword {
-                            Text(String(localized: "disguise.isSet"))
-                                .foregroundColor(.green)
+                            HStack(spacing: 4) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                    .font(.caption)
+                                Text(String(localized: "disguise.passwordSequence.autoSynced"))
+                                    .foregroundColor(.green)
+                                    .font(.caption)
+                            }
                         } else {
-                            Text(String(localized: "disguise.useDefault"))
-                                .foregroundColor(.orange)
+                            HStack(spacing: 4) {
+                                Image(systemName: "exclamationmark.circle.fill")
+                                    .foregroundColor(.orange)
+                                    .font(.caption)
+                                Text(String(localized: "disguise.passwordSequence.notSet"))
+                                    .foregroundColor(.orange)
+                                    .font(.caption)
+                            }
                         }
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        showPasswordInput = true
                     }
                 } header: {
                     Text(String(localized: "disguise.unlockPassword"))
                 } footer: {
                     VStack(alignment: .leading, spacing: 8) {
+                        Text(String(localized: "disguise.passwordSequence.autoSyncHint"))
+                            .foregroundColor(.secondary)
+
                         Text(String(localized: "disguise.instructions.howTo"))
                         Text(String(localized: "disguise.instructions.example"))
                             .foregroundColor(.secondary)
-
-                        if !hasDisguisePassword {
-                            Text(String(localized: "disguise.warning.defaultPassword"))
-                                .foregroundColor(.orange)
-                        }
                     }
                     .font(.caption)
                 }
@@ -134,24 +135,12 @@ struct DisguiseSettingsView: View {
             // 检查密码状态
             hasDisguisePassword = keychainService.isDisguisePasswordSet()
         }
-        .sheet(isPresented: $showPasswordInput) {
-            PasswordSequenceInputView(onSave: { newPassword in
-                hasDisguisePassword = keychainService.isDisguisePasswordSet()
-            })
-        }
-        .alert(String(localized: "disguise.enable.title"), isPresented: $showDisguiseWarning) {
-            Button(String(localized: "common.continue")) {
-                showPasswordInput = true
-            }
-            Button(String(localized: "common.cancel"), role: .cancel) {
-                disguiseModeEnabled = false
-            }
-        } message: {
-            Text(String(localized: "disguise.enable.message"))
-        }
-        .alert(String(localized: "disguise.changePassword.required.title"), isPresented: $showPasswordChangeRequired) {
-            Button(String(localized: "disguise.changePassword.action")) {
-                showPasswordInput = true
+        .alert(
+            String(localized: "disguise.changePassword.required.title"),
+            isPresented: $showPasswordChangeRequired
+        ) {
+            Button(String(localized: "common.ok")) {
+                // User needs to change their main password to enable disguise mode
             }
             Button(String(localized: "common.cancel"), role: .cancel) {
                 disguiseModeEnabled = false
@@ -210,225 +199,6 @@ struct InstructionRow: View {
                 .frame(width: 20)
 
             Text(text)
-                .font(.caption)
-                .foregroundColor(.secondary)
-        }
-    }
-}
-
-// MARK: - Password Sequence Input View
-
-struct PasswordSequenceInputView: View {
-    let onSave: (String) -> Void
-    @Environment(\.dismiss) var dismiss
-    @EnvironmentObject private var authViewModel: AuthenticationViewModel
-
-    private let keychainService = KeychainService.shared
-
-    @State private var inputText: String = ""
-    @State private var errorMessage: String?
-    @State private var needsPasswordChange: Bool = false
-    @State private var showReencryptionConfirm = false
-    @State private var isReencrypting = false
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    TextField(String(localized: "disguise.input.placeholder"), text: $inputText)
-                        .keyboardType(.decimalPad)
-                        .font(.title3)
-                        .multilineTextAlignment(.center)
-                        .padding()
-                } header: {
-                    Text(String(localized: "disguise.passwordSetup.title"))
-                } footer: {
-                    VStack(alignment: .leading, spacing: 8) {
-                        if needsPasswordChange {
-                            Text(String(localized: "disguise.passwordSetup.warning"))
-                                .foregroundColor(.orange)
-                                .fontWeight(.semibold)
-                            Text(String(localized: "disguise.passwordSetup.instruction1"))
-                                .foregroundColor(.orange)
-                            Text(String(localized: "disguise.passwordSetup.instruction2"))
-                                .foregroundColor(.red)
-                        } else {
-                            Text(String(localized: "disguise.passwordSetup.compatible"))
-                                .foregroundColor(.green)
-                            Text(String(localized: "disguise.passwordSetup.canUse"))
-                        }
-
-                        Text(String(localized: "disguise.passwordSetup.rule1"))
-                        Text(String(localized: "disguise.passwordSetup.rule2"))
-
-                        if let error = errorMessage {
-                            Text(error)
-                                .foregroundColor(.red)
-                        }
-                    }
-                    .font(.caption)
-                }
-
-                // 示例
-                Section {
-                    VStack(alignment: .leading, spacing: 12) {
-                        ExampleRow(password: "1234", description: String(localized: "disguise.example.simple"))
-                        ExampleRow(password: "6789", description: String(localized: "disguise.example.sequential"))
-                        ExampleRow(password: "3.14159", description: String(localized: "disguise.example.decimal"))
-                        ExampleRow(password: "20241115", description: String(localized: "disguise.example.date"))
-                    }
-                } header: {
-                    Text(String(localized: "disguise.example.title"))
-                }
-            }
-            .navigationTitle(String(localized: "disguise.setPassword.title"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "common.done")) {
-                        savePassword()
-                    }
-                    .disabled(isReencrypting)
-                }
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "common.cancel")) {
-                        dismiss()
-                    }
-                    .disabled(isReencrypting)
-                }
-            }
-            .alert(String(localized: "disguise.confirmChange.title"), isPresented: $showReencryptionConfirm) {
-                Button(String(localized: "disguise.confirmChange.continue"), role: .destructive) {
-                    performPasswordChange()
-                }
-                Button(String(localized: "common.cancel"), role: .cancel) {
-                    // 不做任何操作
-                }
-            } message: {
-                Text(String(localized: "disguise.confirmChange.message"))
-            }
-            .overlay {
-                if isReencrypting {
-                    ZStack {
-                        Color.black.opacity(0.35).ignoresSafeArea()
-                        ProgressView(String(localized: "disguise.updating"))
-                            .tint(.white)
-                            .foregroundColor(.white)
-                            .padding()
-                            .background(Color.black.opacity(0.5))
-                            .cornerRadius(12)
-                    }
-                }
-            }
-        }
-        .onAppear {
-            // 检查当前主密码是否符合伪装模式要求
-            if let currentPassword = authViewModel.sessionLoginPassword ?? authViewModel.sessionPassword {
-                let allowedCharacters = CharacterSet(charactersIn: "0123456789.")
-                let passwordCharacters = CharacterSet(charactersIn: currentPassword)
-                needsPasswordChange = !passwordCharacters.isSubset(of: allowedCharacters)
-
-                if !needsPasswordChange {
-                    // 主密码符合要求，直接使用
-                    inputText = currentPassword
-                } else {
-                    // 主密码不符合要求，清空输入
-                    inputText = ""
-                }
-            } else {
-                // 尝试从 Keychain 读取已保存的密码
-                inputText = keychainService.loadDisguisePassword() ?? ""
-            }
-        }
-    }
-
-    private func savePassword() {
-        errorMessage = nil
-
-        // 验证输入（仅允许数字和小数点）
-        let allowedCharacters = CharacterSet(charactersIn: "0123456789.")
-        let inputCharacters = CharacterSet(charactersIn: inputText)
-
-        if !inputCharacters.isSubset(of: allowedCharacters) {
-            errorMessage = String(localized: "disguise.error.numbersOnly")
-            return
-        }
-
-        // 至少4位
-        if inputText.isEmpty || inputText.count < 4 {
-            errorMessage = String(localized: "disguise.error.minLength")
-            return
-        }
-
-        // 如果需要修改主密码，先确认是否需要重新加密文件
-        if needsPasswordChange {
-            showReencryptionConfirm = true
-        } else {
-            // 不需要修改主密码，保存到 Keychain
-            do {
-                try keychainService.saveDisguisePassword(inputText)
-                onSave(inputText)
-                dismiss()
-                print("✅ 伪装模式密码已设置: \(inputText)")
-            } catch {
-                errorMessage = String(
-                    format: String(localized: "disguise.error.saveFailed"),
-                    error.localizedDescription)
-                print("❌ 保存伪装密码失败: \(error)")
-            }
-        }
-    }
-
-    private func performPasswordChange() {
-        guard let oldPassword = authViewModel.sessionLoginPassword else {
-            errorMessage = String(localized: "disguise.error.noPassword")
-            return
-        }
-
-        isReencrypting = true
-
-        Task {
-            do {
-                try authViewModel.updatePassword(oldPassword: oldPassword, newPassword: inputText)
-
-                // 保存新密码到 Keychain
-                try keychainService.saveDisguisePassword(inputText)
-
-                await MainActor.run {
-                    onSave(inputText)
-                    isReencrypting = false
-                    dismiss()
-                    print("✅ 密码修改成功")
-                }
-
-            } catch {
-                await MainActor.run {
-                    errorMessage = String(
-                        format: String(localized: "disguise.error.updateFailed"),
-                        error.localizedDescription)
-                    isReencrypting = false
-                    print("❌ 密码修改失败: \(error)")
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Example Row Component
-
-struct ExampleRow: View {
-    let password: String
-    let description: String
-
-    var body: some View {
-        HStack {
-            Text(password)
-                .font(.system(.body, design: .monospaced))
-                .fontWeight(.medium)
-
-            Spacer()
-
-            Text(description)
                 .font(.caption)
                 .foregroundColor(.secondary)
         }

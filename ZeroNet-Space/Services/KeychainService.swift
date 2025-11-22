@@ -119,6 +119,27 @@ class KeychainService {
         print("✅ 密码已从Keychain删除")
     }
 
+    /// 清空所有Keychain数据（包括主密码、访客密码、伪装密码）
+    /// 用于卸载重装后的数据清理
+    func clearAllKeychainData() {
+        // 清空主密码
+        try? deleteFromKeychain(account: passwordAccount)
+        try? deleteFromKeychain(account: saltAccount)
+        try? deleteFromKeychain(account: isSetAccount)
+        try? deleteFromKeychain(account: dataPasswordAccount)
+
+        // 清空访客密码
+        try? deleteFromKeychain(account: guestPasswordAccount)
+        try? deleteFromKeychain(account: guestSaltAccount)
+        try? deleteFromKeychain(account: isGuestSetAccount)
+
+        // 清空伪装密码
+        try? deleteFromKeychain(account: disguisePasswordAccount)
+        try? deleteFromKeychain(account: isDisguiseSetAccount)
+
+        print("✅ 已清空所有Keychain数据（卸载重装检测）")
+    }
+
     /// 更改密码
     /// - Parameters:
     ///   - oldPassword: 旧密码
@@ -133,6 +154,19 @@ class KeychainService {
         let dataPassword = try retrieveDataPassword(using: oldPassword)
         try storeLoginPassword(newPassword)
         try storeDataPassword(dataPassword, using: newPassword)
+
+        // 🎭 自动同步伪装模式密码序列（如果伪装模式已启用）
+        let disguiseModeEnabled = UserDefaults.standard.bool(
+            forKey: AppConstants.UserDefaultsKeys.disguiseModeEnabled
+        )
+        if disguiseModeEnabled {
+            do {
+                try saveDisguisePassword(newPassword)
+                print("✅ 伪装模式密码序列已自动同步为新密码")
+            } catch {
+                print("⚠️ 同步伪装密码序列失败: \(error)")
+            }
+        }
 
         print("✅ 密码已成功更改")
         return dataPassword
@@ -390,7 +424,8 @@ extension KeychainService {
         }
 
         // 2. 使用设备唯一标识生成加密密钥
-        let deviceKey = "ZNS_DISGUISE_\(UIDevice.current.identifierForVendor?.uuidString ?? "DEFAULT")"
+        let deviceKey =
+            "ZNS_DISGUISE_\(UIDevice.current.identifierForVendor?.uuidString ?? "DEFAULT")"
 
         // 3. 加密伪装密码
         let passwordData = Data(password.utf8)
@@ -411,7 +446,8 @@ extension KeychainService {
             let encryptedData = try readFromKeychain(account: disguisePasswordAccount)
 
             // 2. 使用设备唯一标识解密
-            let deviceKey = "ZNS_DISGUISE_\(UIDevice.current.identifierForVendor?.uuidString ?? "DEFAULT")"
+            let deviceKey =
+                "ZNS_DISGUISE_\(UIDevice.current.identifierForVendor?.uuidString ?? "DEFAULT")"
             let decryptedData = try encryptionService.decrypt(
                 encryptedData: encryptedData,
                 password: deviceKey

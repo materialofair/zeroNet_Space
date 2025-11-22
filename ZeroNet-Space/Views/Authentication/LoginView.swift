@@ -40,6 +40,9 @@ struct LoginView: View {
                     // 头部图标
                     headerSection
 
+                    // 零网络隐私提醒
+                    privacyNotice
+
                     // 密码输入区域
                     passwordSection
 
@@ -88,6 +91,38 @@ struct LoginView: View {
                     .multilineTextAlignment(.center)
             }
         }
+    }
+
+    /// 零网络隐私提醒
+    private var privacyNotice: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "network.slash")
+                .font(.title2)
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.green, .blue],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(String(localized: "login.privacy.zeronetwork"))
+                    .font(.headline)
+                    .foregroundStyle(ColorTheme.primaryText)
+
+                Text(String(localized: "login.privacy.networkNotice"))
+                    .font(.caption)
+                    .foregroundStyle(ColorTheme.secondaryText)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer()
+        }
+        .padding()
+        .background(Color.green.opacity(0.1))
+        .cornerRadius(12)
+        .padding(.horizontal)
     }
 
     /// 密码输入区域

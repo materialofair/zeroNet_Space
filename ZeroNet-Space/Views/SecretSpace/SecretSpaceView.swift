@@ -15,7 +15,6 @@ struct SecretSpaceView: View {
     @Query(sort: \SecretNote.modifiedAt, order: .reverse) private var notes: [SecretNote]
     @EnvironmentObject private var guestModeManager: GuestModeManager
 
-    @State private var editorState: EditorState?
     private let draftManager = SecretNoteDraftManager.shared
 
     var body: some View {
@@ -28,39 +27,13 @@ struct SecretSpaceView: View {
             .toolbar {
                 if guestModeManager.isOwnerMode {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button {
-                            createNote()
+                        NavigationLink {
+                            createNoteEditor()
                         } label: {
                             Image(systemName: "plus")
                         }
                     }
                 }
-            }
-            .sheet(item: $editorState) { state in
-                NoteEditorView(
-                    initialTitle: state.title,
-                    initialContent: state.content,
-                    isNewNote: state.isNew,
-                    onSave: { title, content in
-                        saveNote(
-                            existing: state.note, title: title, content: content,
-                            clearDraft: state.isNew)
-                        editorState = nil
-                    },
-                    onCancel: { title, content in
-                        if state.isNew {
-                            draftManager.saveDraft(title: title, content: content)
-                        }
-                        editorState = nil
-                    },
-                    onAutoSave: { title, content in
-                        if state.isNew {
-                            draftManager.saveDraft(title: title, content: content)
-                        } else {
-                            saveNote(existing: state.note, title: title, content: content)
-                        }
-                    }
-                )
             }
         }
     }
@@ -74,10 +47,11 @@ struct SecretSpaceView: View {
                 if !pinnedNotes.isEmpty {
                     Section(String(localized: "secretSpace.section.pinned")) {
                         ForEach(pinnedNotes) { note in
-                            NoteRow(note: note)
-                                .onTapGesture {
-                                    edit(note)
-                                }
+                            NavigationLink {
+                                editNoteEditor(note: note)
+                            } label: {
+                                NoteRow(note: note)
+                            }
                         }
                         .onDelete { indexSet in
                             delete(indices: indexSet, from: pinnedNotes)
@@ -86,10 +60,11 @@ struct SecretSpaceView: View {
                 }
                 Section(String(localized: "secretSpace.section.notes")) {
                     ForEach(regularNotes) { note in
-                        NoteRow(note: note)
-                            .onTapGesture {
-                                edit(note)
-                            }
+                        NavigationLink {
+                            editNoteEditor(note: note)
+                        } label: {
+                            NoteRow(note: note)
+                        }
                     }
                     .onDelete(perform: delete)
                 }
@@ -123,8 +98,8 @@ struct SecretSpaceView: View {
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
 
-            Button {
-                createNote()
+            NavigationLink {
+                createNoteEditor()
             } label: {
                 Label(String(localized: "note.new"), systemImage: "plus")
                     .padding(.horizontal, 20)
@@ -140,15 +115,37 @@ struct SecretSpaceView: View {
 
     // MARK: - Actions
 
-    private func createNote() {
+    @ViewBuilder
+    private func createNoteEditor() -> some View {
         let draft = draftManager.loadDraft()
-        editorState = EditorState(
-            note: nil, title: draft?.title ?? "", content: draft?.content ?? "", isNew: true)
+        NoteEditorView(
+            initialTitle: draft?.title ?? "",
+            initialContent: draft?.content ?? "",
+            isNewNote: true,
+            onSave: { title, content in
+                saveNote(existing: nil, title: title, content: content, clearDraft: true)
+            },
+            onAutoSave: { title, content in
+                draftManager.saveDraft(title: title, content: content)
+            }
+        )
+        .environment(\.modelContext, modelContext)
     }
 
-    private func edit(_ note: SecretNote) {
-        editorState = EditorState(
-            note: note, title: note.title, content: note.content, isNew: false)
+    @ViewBuilder
+    private func editNoteEditor(note: SecretNote) -> some View {
+        NoteEditorView(
+            initialTitle: note.title,
+            initialContent: note.content,
+            isNewNote: false,
+            onSave: { title, content in
+                saveNote(existing: note, title: title, content: content)
+            },
+            onAutoSave: { title, content in
+                saveNote(existing: note, title: title, content: content)
+            }
+        )
+        .environment(\.modelContext, modelContext)
     }
 
     private func delete(at offsets: IndexSet) {
@@ -196,14 +193,6 @@ struct SecretSpaceView: View {
         }
     }
 
-}
-
-private struct EditorState: Identifiable {
-    let id = UUID()
-    let note: SecretNote?
-    let title: String
-    let content: String
-    let isNew: Bool
 }
 
 // MARK: - Note Row

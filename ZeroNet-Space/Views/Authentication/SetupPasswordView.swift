@@ -40,6 +40,9 @@ struct SetupPasswordView: View {
                         // 头部图标和标题
                         headerSection
 
+                        // 零网络隐私提醒
+                        privacyNotice
+
                         // 密码输入表单
                         passwordForm
 
@@ -88,36 +91,74 @@ struct SetupPasswordView: View {
         }
     }
 
+    /// 零网络隐私提醒
+    private var privacyNotice: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "network.slash")
+                .font(.title2)
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.green, .blue],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(String(localized: "setup.privacy.title"))
+                    .font(.headline)
+                    .foregroundColor(.primary)
+
+                Text(String(localized: "setup.privacy.message"))
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer()
+        }
+        .padding()
+        .background(Color.green.opacity(0.1))
+        .cornerRadius(12)
+    }
+
     /// 密码输入表单
     private var passwordForm: some View {
         VStack(spacing: 20) {
             // 密码输入
             VStack(alignment: .leading, spacing: 8) {
-                if viewModel.showPassword {
-                    TextField(
-                        String(localized: "setup.passwordPlaceholder"),
-                        text: $viewModel.password
-                    )
-                        .textFieldStyle(.roundedBorder)
+                HStack {
+                    Image(systemName: "lock.fill")
+                        .foregroundColor(.gray)
+                        .frame(width: 20)
+
+                    if viewModel.showPassword {
+                        TextField(
+                            String(localized: "setup.passwordPlaceholder"),
+                            text: $viewModel.password
+                        )
                         .textContentType(.newPassword)
                         .focused($focusedField, equals: .password)
                         .submitLabel(.next)
                         .onSubmit {
                             focusedField = .confirmPassword
                         }
-                } else {
-                    SecureField(
-                        String(localized: "setup.passwordPlaceholder"),
-                        text: $viewModel.password
-                    )
-                        .textFieldStyle(.roundedBorder)
+                    } else {
+                        SecureField(
+                            String(localized: "setup.passwordPlaceholder"),
+                            text: $viewModel.password
+                        )
                         .textContentType(.newPassword)
                         .focused($focusedField, equals: .password)
                         .submitLabel(.next)
                         .onSubmit {
                             focusedField = .confirmPassword
                         }
+                    }
                 }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
 
                 // Password strength indicator
                 if !viewModel.password.isEmpty {
@@ -138,12 +179,16 @@ struct SetupPasswordView: View {
 
             // 确认密码输入
             VStack(alignment: .leading, spacing: 8) {
-                if viewModel.showPassword {
-                    TextField(
-                        String(localized: "setup.confirmPasswordPlaceholder"),
-                        text: $viewModel.confirmPassword
-                    )
-                        .textFieldStyle(.roundedBorder)
+                HStack {
+                    Image(systemName: "lock.fill")
+                        .foregroundColor(.gray)
+                        .frame(width: 20)
+
+                    if viewModel.showPassword {
+                        TextField(
+                            String(localized: "setup.confirmPasswordPlaceholder"),
+                            text: $viewModel.confirmPassword
+                        )
                         .textContentType(.newPassword)
                         .focused($focusedField, equals: .confirmPassword)
                         .submitLabel(.done)
@@ -152,12 +197,11 @@ struct SetupPasswordView: View {
                                 viewModel.setupPassword()
                             }
                         }
-                } else {
-                    SecureField(
-                        String(localized: "setup.confirmPasswordPlaceholder"),
-                        text: $viewModel.confirmPassword
-                    )
-                        .textFieldStyle(.roundedBorder)
+                    } else {
+                        SecureField(
+                            String(localized: "setup.confirmPasswordPlaceholder"),
+                            text: $viewModel.confirmPassword
+                        )
                         .textContentType(.newPassword)
                         .focused($focusedField, equals: .confirmPassword)
                         .submitLabel(.done)
@@ -166,7 +210,11 @@ struct SetupPasswordView: View {
                                 viewModel.setupPassword()
                             }
                         }
+                    }
                 }
+                .padding()
+                .background(Color(.systemGray6))
+                .cornerRadius(12)
 
                 // Password match indicator
                 if !viewModel.confirmPassword.isEmpty {

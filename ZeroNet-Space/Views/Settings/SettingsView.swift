@@ -387,8 +387,10 @@ struct SettingsView: View {
         let descriptor = FetchDescriptor<MediaItem>()
         currentMediaCount = (try? modelContext.fetchCount(descriptor)) ?? 0
 
-        // Sync purchase state with AppSettings
-        settings.hasUnlockedUnlimited = purchaseManager.hasUnlockedUnlimited
+        // Sync purchase state with AppSettings (but don't override demo mode)
+        if !AppConstants.isDemoModeEnabled {
+            settings.hasUnlockedUnlimited = purchaseManager.hasUnlockedUnlimited
+        }
     }
 
     private func purchaseUnlimited() {
@@ -405,41 +407,60 @@ struct SettingsView: View {
     private func restorePurchases() {
         Task {
             await purchaseManager.restorePurchases()
-            // Update settings
-            settings.hasUnlockedUnlimited = purchaseManager.hasUnlockedUnlimited
+            // Update settings (but don't override demo mode)
+            if !AppConstants.isDemoModeEnabled {
+                settings.hasUnlockedUnlimited = purchaseManager.hasUnlockedUnlimited
+            }
         }
     }
 
     // MARK: - Guest Mode
 
     private var guestModeRow: some View {
-        HStack {
-            Label(String(localized: "guestMode.title"), systemImage: "person.2.fill")
+        VStack(spacing: 0) {
+            HStack {
+                Label(String(localized: "guestMode.title"), systemImage: "person.2.fill")
 
-            Spacer()
+                Spacer()
 
-            if KeychainService.shared.isGuestPasswordSet() {
-                // 已设置访客密码
-                Toggle(
-                    "",
-                    isOn: Binding(
-                        get: { settings.guestModeEnabled },
-                        set: { newValue in
-                            if newValue {
-                                settings.guestModeEnabled = true
-                            } else {
-                                showGuestModeDisableConfirmation = true
+                if KeychainService.shared.isGuestPasswordSet() {
+                    // 已设置访客密码 - 显示开关
+                    Toggle(
+                        "",
+                        isOn: Binding(
+                            get: { settings.guestModeEnabled },
+                            set: { newValue in
+                                if newValue {
+                                    settings.guestModeEnabled = true
+                                } else {
+                                    showGuestModeDisableConfirmation = true
+                                }
                             }
-                        }
-                    ))
-            } else {
-                // 未设置访客密码
-                Button {
-                    showGuestModeSetup = true
-                } label: {
-                    Text(String(localized: "guestMode.setup.action"))
-                        .foregroundColor(.blue)
+                        ))
+                } else {
+                    // 未设置访客密码 - 显示设置按钮
+                    Button {
+                        showGuestModeSetup = true
+                    } label: {
+                        Text(String(localized: "guestMode.setup.action"))
+                            .foregroundColor(.blue)
+                    }
                 }
+            }
+
+            // 如果已设置访客密码，显示修改按钮
+            if KeychainService.shared.isGuestPasswordSet() {
+                HStack {
+                    Spacer()
+                    Button {
+                        showGuestModeSetup = true
+                    } label: {
+                        Text(String(localized: "guestMode.changePassword"))
+                            .font(.caption)
+                            .foregroundColor(.blue)
+                    }
+                }
+                .padding(.top, 4)
             }
         }
     }

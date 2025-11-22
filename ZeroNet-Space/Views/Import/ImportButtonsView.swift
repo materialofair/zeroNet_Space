@@ -69,6 +69,19 @@ struct ImportButtonsView: View {
                     viewModel.importFromFiles(urls: urls)
                 }
             }
+            .sheet(isPresented: $viewModel.showEncryptedPasswordInput) {
+                if let pendingFile = viewModel.pendingEncryptedFile {
+                    EncryptedFilePasswordInputView(
+                        fileName: pendingFile.fileName,
+                        onConfirm: { password in
+                            viewModel.handleEncryptedFilePassword(password)
+                        },
+                        onCancel: {
+                            viewModel.cancelEncryptedFilePasswordInput()
+                        }
+                    )
+                }
+            }
             .alert(
                 String(localized: "import.failed"),
                 isPresented: .constant(viewModel.errorMessage != nil)

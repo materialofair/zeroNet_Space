@@ -3005,13 +3005,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The decoy password will be deleted"
+            "value": "The guest password will be deleted"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "伪装密码将被删除"
+            "value": "访客密码将被删除"
           }
         }
       }
@@ -3022,13 +3022,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Disable Hidden Feature"
+            "value": "Disable Guest Mode"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "禁用隐藏功能"
+            "value": "禁用访客模式"
           }
         }
       }
@@ -3158,13 +3158,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "🎁 Hidden Feature"
+            "value": "Guest Mode"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "🎁 隐藏功能"
+            "value": "访客模式"
           }
         }
       }
@@ -3175,13 +3175,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Confirm Decoy Password"
+            "value": "Confirm Guest Password"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "确认伪装密码"
+            "value": "确认访客密码"
           }
         }
       }
@@ -3209,13 +3209,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decoy Password"
+            "value": "Guest Password"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "伪装密码"
+            "value": "访客密码"
           }
         }
       }
@@ -3243,13 +3243,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Unlock"
+            "value": "Set Up"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "解锁"
+            "value": "设置"
           }
         }
       }
@@ -3277,13 +3277,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "🎉 Surprise Feature Unlocked!"
+            "value": "Guest Mode Setup"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "🎉 惊喜功能已解锁！"
+            "value": "访客模式设置"
           }
         }
       }
@@ -3294,13 +3294,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hidden Feature Setup"
+            "value": "Guest Mode Setup"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "隐藏功能设置"
+            "value": "访客模式设置"
           }
         }
       }
@@ -3311,13 +3311,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "🎁 Hidden Feature"
+            "value": "Guest Mode"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "🎁 隐藏功能"
+            "value": "访客模式"
           }
         }
       }
@@ -3668,13 +3668,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Import Limit & Purchases"
+            "value": "Unlock Premium Features"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "导入限制与内购"
+            "value": "解锁高级功能"
           }
         }
       }
@@ -3702,13 +3702,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Unlock unlimited photo, video, and file imports. One-time purchase, lifetime access."
+            "value": "Unlock unlimited imports + 🎁 Hidden surprise feature! One-time purchase, lifetime access."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "解锁无限照片、视频和文件导入。一次购买，终身使用。"
+            "value": "解锁无限导入 + 🎁 隐藏惊喜功能！一次购买，终身使用。"
           }
         }
       }
@@ -3753,13 +3753,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "One-time purchase, lifetime access"
+            "value": "Unlimited imports + bonus surprise feature"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "一次性购买，终身使用"
+            "value": "无限导入 + 彩蛋惊喜功能"
           }
         }
       }
@@ -10418,7 +10418,75 @@
         }
       }
     },
-    "ZeroNet Space": {}
+    "ZeroNet Space": {},
+    "guestMode.changePassword": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change Password"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "修改密码"
+          }
+        }
+      }
+    },
+    "disguise.passwordSequence.autoSynced": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto-synced"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已自动同步"
+          }
+        }
+      }
+    },
+    "disguise.passwordSequence.notSet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not set"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未设置"
+          }
+        }
+      }
+    },
+    "disguise.passwordSequence.autoSyncHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Password sequence automatically syncs with your main password. Change your main password to update the disguise mode unlock sequence."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "密码序列自动与主密码同步。修改主密码即可更新伪装模式解锁序列。"
+          }
+        }
+      }
+    }
   },
   "version": "1.0"
 }

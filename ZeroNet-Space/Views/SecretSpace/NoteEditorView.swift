@@ -10,6 +10,7 @@ import SwiftUI
 
 struct NoteEditorView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) private var colorScheme
     @FocusState private var focusedField: Field?
 
     @State private var title: String
@@ -19,99 +20,145 @@ struct NoteEditorView: View {
 
     let isNewNote: Bool
     let onSave: (String, String) -> Void
-    let onCancel: (String, String) -> Void
     let onAutoSave: (String, String) -> Void
 
     init(
         initialTitle: String, initialContent: String, isNewNote: Bool,
-        onSave: @escaping (String, String) -> Void, onCancel: @escaping (String, String) -> Void,
+        onSave: @escaping (String, String) -> Void,
         onAutoSave: @escaping (String, String) -> Void
     ) {
         self._title = State(initialValue: initialTitle)
         self._content = State(initialValue: initialContent)
         self.isNewNote = isNewNote
         self.onSave = onSave
-        self.onCancel = onCancel
         self.onAutoSave = onAutoSave
     }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    TextField(String(localized: "note.title.placeholder"), text: $title)
-                        .textInputAutocapitalization(.sentences)
-                        .focused($focusedField, equals: .title)
-                }
+        ZStack {
+            // 纸张风格背景
+            paperBackground
+                .ignoresSafeArea()
 
-                Section {
-                    ZStack(alignment: .topLeading) {
-                        TextEditor(text: $content)
-                            .frame(minHeight: 240)
-                            .focused($focusedField, equals: .body)
+            VStack(spacing: 0) {
+                // 标题输入框
+                titleSection
 
-                        if content.isEmpty {
-                            Text(String(localized: "note.content.placeholder"))
-                                .foregroundColor(.secondary)
-                                .padding(.top, 8)
-                                .padding(.horizontal, 4)
-                        }
-                    }
-                    infoRow
-                }
+                Divider()
+                    .padding(.horizontal)
+
+                // 内容编辑器
+                contentSection
+
+                // 底部工具栏
+                bottomToolbar
             }
-            .navigationTitle(
-                title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    ? String(localized: "note.new")
-                    : title
-            )
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "common.cancel")) {
-                        onCancel(title, content)
-                        dismiss()
-                    }
+        }
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button(String(localized: "common.save")) {
+                    onSave(title, content)
+                    dismiss()
                 }
-
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "common.save")) {
-                        onSave(title, content)
-                        dismiss()
-                    }
-                    .disabled(
-                        title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                            && content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    )
-                }
+                .fontWeight(.semibold)
+                .disabled(
+                    title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        && content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                )
             }
         }
         .onAppear {
-            focusedField = isNewNote ? .body : .title
+            focusedField = .content
         }
         .onChange(of: title) { _ in scheduleAutoSave() }
         .onChange(of: content) { _ in scheduleAutoSave() }
     }
 
-    private var infoRow: some View {
-        HStack {
-            Text(String(format: String(localized: "note.wordCount"), content.count))
-                .font(.caption)
-                .foregroundColor(.secondary)
-            Spacer()
-            if let lastSaved = lastAutoSaved {
-                Text(
-                    String(format: String(localized: "note.lastSaved"), formatted(date: lastSaved))
-                )
-                .font(.caption2)
-                .foregroundColor(.secondary)
+    // MARK: - View Components
+
+    /// 纸张风格背景
+    private var paperBackground: some View {
+        Group {
+            if colorScheme == .light {
+                Color(red: 1.0, green: 0.98, blue: 0.94)  // 米黄色纸张
             } else {
-                Text(String(localized: "note.autoSave.pending"))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                Color(red: 0.15, green: 0.15, blue: 0.15)  // 深灰色
             }
         }
-        .padding(.top, 4)
+    }
+
+    /// 标题输入区域
+    private var titleSection: some View {
+        TextField(String(localized: "note.title.placeholder"), text: $title)
+            .font(.system(size: 24, weight: .bold))
+            .textInputAutocapitalization(.sentences)
+            .focused($focusedField, equals: .title)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+            .background(Color.clear)
+    }
+
+    /// 内容编辑区域
+    private var contentSection: some View {
+        ZStack(alignment: .topLeading) {
+            TextEditor(text: $content)
+                .font(.system(size: 17))
+                .lineSpacing(6)
+                .focused($focusedField, equals: .content)
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
+
+            if content.isEmpty {
+                Text(String(localized: "note.content.placeholder"))
+                    .font(.system(size: 17))
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
+                    .allowsHitTesting(false)
+            }
+        }
+    }
+
+    /// 底部工具栏
+    private var bottomToolbar: some View {
+        HStack {
+            // 字数统计
+            HStack(spacing: 4) {
+                Image(systemName: "doc.text")
+                    .font(.caption2)
+                Text(String(format: String(localized: "note.wordCount"), content.count))
+                    .font(.caption)
+            }
+            .foregroundColor(.secondary)
+
+            Spacer()
+
+            // 自动保存状态
+            if let lastSaved = lastAutoSaved {
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.caption2)
+                        .foregroundColor(.green)
+                    Text(
+                        String(
+                            format: String(localized: "note.lastSaved"),
+                            formatted(date: lastSaved))
+                    )
+                    .font(.caption2)
+                }
+                .foregroundColor(.secondary)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .background(
+            colorScheme == .light
+                ? Color(red: 0.95, green: 0.95, blue: 0.95).opacity(0.8)
+                : Color(red: 0.2, green: 0.2, blue: 0.2).opacity(0.8)
+        )
     }
 
     private func scheduleAutoSave() {
@@ -134,12 +181,18 @@ struct NoteEditorView: View {
 
     private enum Field {
         case title
-        case body
+        case content
     }
 }
 
 #Preview {
-    NoteEditorView(
-        initialTitle: "", initialContent: "", isNewNote: true, onSave: { _, _ in },
-        onCancel: { _, _ in }, onAutoSave: { _, _ in })
+    NavigationStack {
+        NoteEditorView(
+            initialTitle: "",
+            initialContent: "",
+            isNewNote: true,
+            onSave: { _, _ in },
+            onAutoSave: { _, _ in }
+        )
+    }
 }

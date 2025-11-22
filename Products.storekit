@@ -43,7 +43,7 @@
     "_failTransactionsEnabled" : false,
     "_locale" : "en_US",
     "_renewalBillingIssuesEnabled" : false,
-    "_storefront" : "USA",
+    "_storefront" : "CMR",
     "_storeKitErrors" : [
 
     ],

@@ -28,7 +28,7 @@ enum AppConstants {
 
     /// 演示模式密码（用于App Store审核）
     /// ⚠️ 在审核说明中告知审核团队使用此密码即可解锁所有功能
-    static let demoPassword = "AppleReview2025"
+    static let demoPassword = "0.00000"
 
     /// 演示模式UserDefaults键
     private static let demoModeKey = "DemoModeEnabled"

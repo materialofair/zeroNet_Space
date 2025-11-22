@@ -519,4 +519,91 @@ class MediaImportService {
 
         return (width, height, durationSeconds)
     }
+
+    // MARK: - Encrypted File Re-encryption
+
+    /// 导入已加密文件并使用新密码重新加密
+    /// - Parameters:
+    ///   - url: 加密文件URL
+    ///   - originalPassword: 原始加密密码
+    ///   - newPassword: 新的加密密码
+    /// - Returns: 导入的MediaItem数组
+    func importEncryptedFileWithReencryption(
+        url: URL,
+        originalPassword: String,
+        newPassword: String
+    ) async throws -> [MediaItem] {
+        print("📦 开始导入加密文件: \(url.lastPathComponent)")
+        print("🔄 使用原始密码解密，然后用新密码重新加密")
+
+        // 1. 读取加密文件数据
+        let encryptedData = try Data(contentsOf: url)
+        print("📊 加密数据大小: \(encryptedData.count) bytes")
+
+        // 2. 使用原始密码解密
+        print("🔓 正在解密...")
+        let decryptedData = try encryptionService.decrypt(
+            encryptedData: encryptedData,
+            password: originalPassword
+        )
+        print("✅ 解密成功: \(decryptedData.count) bytes")
+
+        // 3. 使用新密码重新加密
+        print("🔐 使用新密码重新加密...")
+        let reencryptedData = try encryptionService.encrypt(
+            data: decryptedData,
+            password: newPassword
+        )
+        print("✅ 重新加密成功: \(reencryptedData.count) bytes")
+
+        // 4. 保存重新加密的数据
+        // 获取原始文件名（去掉.encrypted后缀）
+        let originalURL = url.deletingPathExtension()
+        let fileName = originalURL.deletingPathExtension().lastPathComponent
+        let fileExtension = "." + originalURL.pathExtension
+
+        let encryptedPath = try storageService.saveEncrypted(
+            data: reencryptedData,
+            originalFileName: url.lastPathComponent
+        )
+        print("💾 重新加密的文件已保存: \(encryptedPath)")
+
+        // 5. 尝试从解密数据中提取元数据
+        let fileSize = Int64(decryptedData.count)
+        let mediaType = MediaType.from(fileExtension: originalURL.pathExtension)
+
+        var thumbnailData: Data?
+        var width: Int?
+        var height: Int?
+        var duration: Double?
+
+        // 尝试生成缩略图（如果是图片或视频）
+        if mediaType == .photo {
+            if let image = UIImage(data: decryptedData) {
+                width = Int(image.size.width)
+                height = Int(image.size.height)
+                if let thumbnail = image.thumbnail(maxSize: AppConstants.thumbnailMaxSize) {
+                    thumbnailData = thumbnail.compressedJPEGData(
+                        quality: AppConstants.thumbnailCompressionQuality
+                    )
+                }
+            }
+        }
+
+        // 创建MediaItem
+        let mediaItem = MediaItem(
+            fileName: fileName,
+            fileExtension: fileExtension,
+            fileSize: fileSize,
+            type: mediaType,
+            encryptedPath: encryptedPath,
+            thumbnailData: thumbnailData,
+            width: width,
+            height: height,
+            duration: duration
+        )
+
+        print("✅ 加密文件导入并重新加密完成")
+        return [mediaItem]
+    }
 }

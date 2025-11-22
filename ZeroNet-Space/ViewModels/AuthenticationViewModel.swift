@@ -100,43 +100,61 @@ final class AuthenticationViewModel: ObservableObject {
     private func setupNotificationObservers() {
         // 监听伪装模式解锁通知
         NotificationCenter.default.publisher(for: .unlockFromDisguise)
-            .sink { [weak self] _ in
+            .sink { [weak self] notification in
                 Task { @MainActor in
-                    await self?.handleDisguiseUnlock()
+                    // 获取解锁模式（owner 或 guest）和密码
+                    let mode = notification.userInfo?["mode"] as? String ?? "owner"
+                    let password = notification.userInfo?["password"] as? String ?? ""
+                    await self?.handleDisguiseUnlock(mode: mode, password: password)
                 }
             }
             .store(in: &cancellables)
     }
 
-    private func handleDisguiseUnlock() async {
-        print("🔓 收到伪装模式解锁通知")
+    private func handleDisguiseUnlock(mode: String, password: String) async {
+        print("🔓 收到伪装模式解锁通知 - 模式: \(mode)")
 
-        // 从 Keychain 读取伪装密码序列
-        let disguisePassword = keychainService.loadDisguisePassword() ?? "1234"
-
-        // 验证伪装密码是否匹配主密码
-        if keychainService.verifyPassword(disguisePassword) {
-            // 密码匹配，获取数据加密密码
-            do {
-                let dataPassword = try await Task.detached {
-                    try self.keychainService.retrieveDataPassword(using: disguisePassword)
-                }.value
-
-                // 使用 Data 格式存储
-                sessionPasswordData = Data(dataPassword.utf8)
-                sessionLoginPassword = disguisePassword
+        if mode == "guest" {
+            // 访客模式解锁
+            await MainActor.run {
+                // 保存访客密码
+                sessionPasswordData = Data(password.utf8)
+                sessionLoginPassword = password
                 isAuthenticated = true
-                print("✅ 伪装模式解锁成功，会话密码已设置")
-            } catch {
-                print("❌ 获取数据密码失败: \(error)")
-                isAuthenticated = false
-                errorMessage = String(localized: "auth.error.disguiseUnlockFailed")
+
+                // 设置为访客模式
+                GuestModeManager.shared.setAuthenticationMode(.guest)
+
+                print("✅ 伪装模式解锁到访客模式成功")
+                print("   isAuthenticated: \(isAuthenticated)")
+                print("   currentMode: \(GuestModeManager.shared.currentMode)")
             }
         } else {
-            // 密码不匹配，说明伪装密码与主密码不一致
-            print("⚠️ 伪装密码与主密码不一致，需要重新登录")
-            isAuthenticated = false
-            errorMessage = String(localized: "auth.error.disguiseMismatch")
+            // 主人模式解锁
+            do {
+                let dataPassword = try await Task.detached {
+                    try self.keychainService.retrieveDataPassword(using: password)
+                }.value
+
+                await MainActor.run {
+                    sessionPasswordData = Data(dataPassword.utf8)
+                    sessionLoginPassword = password
+                    isAuthenticated = true
+
+                    // 设置为主人模式
+                    GuestModeManager.shared.setAuthenticationMode(.owner)
+
+                    print("✅ 伪装模式解锁到主人模式成功")
+                    print("   isAuthenticated: \(isAuthenticated)")
+                    print("   currentMode: \(GuestModeManager.shared.currentMode)")
+                }
+            } catch {
+                await MainActor.run {
+                    print("❌ 获取数据密码失败: \(error)")
+                    isAuthenticated = false
+                    errorMessage = String(localized: "auth.error.disguiseUnlockFailed")
+                }
+            }
         }
     }
 
@@ -318,8 +336,9 @@ final class AuthenticationViewModel: ObservableObject {
                 }
             } else if guestMatch {
                 // 访客模式登录成功
-                sessionPasswordData = nil
-                sessionLoginPassword = nil
+                // 保存访客密码以便伪装模式解锁时使用
+                sessionPasswordData = Data(inputPassword.utf8)
+                sessionLoginPassword = inputPassword
                 isAuthenticated = true
 
                 // 设置为访客模式
