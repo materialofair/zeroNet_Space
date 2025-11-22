@@ -57,7 +57,7 @@ class KeychainService {
     private let guestSaltAccount = "guestPasswordSalt"
     private let isGuestSetAccount = "isGuestPasswordSet"
 
-    // 伪装模式相关账户
+    // 计算器登录模式相关账户
     private let disguisePasswordAccount = "disguisePassword"
     private let isDisguiseSetAccount = "isDisguisePasswordSet"
 
@@ -119,7 +119,7 @@ class KeychainService {
         print("✅ 密码已从Keychain删除")
     }
 
-    /// 清空所有Keychain数据（包括主密码、访客密码、伪装密码）
+    /// 清空所有Keychain数据（包括主密码、访客密码、计算器登录密码）
     /// 用于卸载重装后的数据清理
     func clearAllKeychainData() {
         // 清空主密码
@@ -133,7 +133,7 @@ class KeychainService {
         try? deleteFromKeychain(account: guestSaltAccount)
         try? deleteFromKeychain(account: isGuestSetAccount)
 
-        // 清空伪装密码
+        // 清空计算器登录密码
         try? deleteFromKeychain(account: disguisePasswordAccount)
         try? deleteFromKeychain(account: isDisguiseSetAccount)
 
@@ -155,16 +155,16 @@ class KeychainService {
         try storeLoginPassword(newPassword)
         try storeDataPassword(dataPassword, using: newPassword)
 
-        // 🎭 自动同步伪装模式密码序列（如果伪装模式已启用）
+        // 🎭 自动同步计算器登录模式密码序列（如果计算器登录模式已启用）
         let disguiseModeEnabled = UserDefaults.standard.bool(
             forKey: AppConstants.UserDefaultsKeys.disguiseModeEnabled
         )
         if disguiseModeEnabled {
             do {
                 try saveDisguisePassword(newPassword)
-                print("✅ 伪装模式密码序列已自动同步为新密码")
+                print("✅ 计算器登录模式密码序列已自动同步为新密码")
             } catch {
-                print("⚠️ 同步伪装密码序列失败: \(error)")
+                print("⚠️ 同步计算器登录密码序列失败: \(error)")
             }
         }
 
@@ -412,11 +412,11 @@ extension KeychainService {
 
 extension KeychainService {
 
-    /// 保存伪装模式密码（加密存储）
-    /// - Parameter password: 伪装密码（仅数字和小数点）
+    /// 保存计算器登录模式密码（加密存储）
+    /// - Parameter password: 计算器登录密码（仅数字和小数点）
     /// - Throws: KeychainError
     func saveDisguisePassword(_ password: String) throws {
-        // 1. 验证伪装密码格式（仅数字和小数点）
+        // 1. 验证计算器登录密码格式（仅数字和小数点）
         let allowedCharacters = CharacterSet(charactersIn: "0123456789.")
         let passwordCharacters = CharacterSet(charactersIn: password)
         guard passwordCharacters.isSubset(of: allowedCharacters), password.count >= 4 else {
@@ -427,7 +427,7 @@ extension KeychainService {
         let deviceKey =
             "ZNS_DISGUISE_\(UIDevice.current.identifierForVendor?.uuidString ?? "DEFAULT")"
 
-        // 3. 加密伪装密码
+        // 3. 加密计算器登录密码
         let passwordData = Data(password.utf8)
         let encryptedData = try encryptionService.encrypt(data: passwordData, password: deviceKey)
 
@@ -435,11 +435,11 @@ extension KeychainService {
         try saveToKeychain(account: disguisePasswordAccount, data: encryptedData)
         try saveToKeychain(account: isDisguiseSetAccount, data: Data([1]))
 
-        print("✅ 伪装密码已加密并安全保存到Keychain")
+        print("✅ 计算器登录密码已加密并安全保存到Keychain")
     }
 
-    /// 读取伪装模式密码
-    /// - Returns: 伪装密码，如果未设置返回 nil
+    /// 读取计算器登录模式密码
+    /// - Returns: 计算器登录密码，如果未设置返回 nil
     func loadDisguisePassword() -> String? {
         do {
             // 1. 从 Keychain 读取加密数据
@@ -455,16 +455,16 @@ extension KeychainService {
 
             // 3. 转换为字符串
             guard let password = String(data: decryptedData, encoding: .utf8) else {
-                print("❌ 伪装密码解密失败：数据格式错误")
+                print("❌ 计算器登录密码解密失败：数据格式错误")
                 return nil
             }
 
             return password
         } catch KeychainError.itemNotFound {
-            // 伪装密码未设置，返回 nil
+            // 计算器登录密码未设置，返回 nil
             return nil
         } catch {
-            print("❌ 读取伪装密码失败: \(error)")
+            print("❌ 读取计算器登录密码失败: \(error)")
             return nil
         }
     }

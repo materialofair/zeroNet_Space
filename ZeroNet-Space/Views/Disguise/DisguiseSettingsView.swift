@@ -2,8 +2,8 @@
 //  DisguiseSettingsView.swift
 //  ZeroNet-Space
 //
-//  伪装模式设置界面
-//  开启/关闭伪装模式，设置密码序列
+//  计算器登录模式设置界面
+//  开启/关闭计算器登录模式，设置密码序列
 //
 
 import SwiftData
@@ -23,55 +23,59 @@ struct DisguiseSettingsView: View {
 
     var body: some View {
         Form {
-            // 伪装模式开关
+            // 计算器登录模式开关
             Section {
-                Toggle(String(localized: "disguise.enable.title"), isOn: $disguiseModeEnabled)
-                    .onChange(of: disguiseModeEnabled) { oldValue, newValue in
-                        if newValue {
-                            checkAndSetupDisguiseMode()
-                        }
+                Toggle(
+                    String(localized: "calculatorLogin.enable.title"), isOn: $disguiseModeEnabled
+                )
+                .onChange(of: disguiseModeEnabled) { oldValue, newValue in
+                    if newValue {
+                        checkAndSetupDisguiseMode()
                     }
+                }
             } header: {
-                Text(String(localized: "disguise.calculator.title"))
+                Text(String(localized: "calculatorLogin.title"))
             } footer: {
-                Text(String(localized: "disguise.enable.description"))
+                Text(String(localized: "calculatorLogin.enable.description"))
             }
 
             if disguiseModeEnabled {
                 // 密码序列状态（只读显示）
                 Section {
                     HStack {
-                        Text(String(localized: "disguise.passwordSequence"))
+                        Text(String(localized: "calculatorLogin.passwordSequence"))
                         Spacer()
                         if hasDisguisePassword {
                             HStack(spacing: 4) {
                                 Image(systemName: "checkmark.circle.fill")
                                     .foregroundColor(.green)
                                     .font(.caption)
-                                Text(String(localized: "disguise.passwordSequence.autoSynced"))
-                                    .foregroundColor(.green)
-                                    .font(.caption)
+                                Text(
+                                    String(localized: "calculatorLogin.passwordSequence.autoSynced")
+                                )
+                                .foregroundColor(.green)
+                                .font(.caption)
                             }
                         } else {
                             HStack(spacing: 4) {
                                 Image(systemName: "exclamationmark.circle.fill")
                                     .foregroundColor(.orange)
                                     .font(.caption)
-                                Text(String(localized: "disguise.passwordSequence.notSet"))
+                                Text(String(localized: "calculatorLogin.passwordSequence.notSet"))
                                     .foregroundColor(.orange)
                                     .font(.caption)
                             }
                         }
                     }
                 } header: {
-                    Text(String(localized: "disguise.unlockPassword"))
+                    Text(String(localized: "calculatorLogin.unlockPassword"))
                 } footer: {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(String(localized: "disguise.passwordSequence.autoSyncHint"))
+                        Text(String(localized: "calculatorLogin.passwordSequence.autoSyncHint"))
                             .foregroundColor(.secondary)
 
-                        Text(String(localized: "disguise.instructions.howTo"))
-                        Text(String(localized: "disguise.instructions.example"))
+                        Text(String(localized: "calculatorLogin.instructions.howTo"))
+                        Text(String(localized: "calculatorLogin.instructions.example"))
                             .foregroundColor(.secondary)
                     }
                     .font(.caption)
@@ -82,30 +86,30 @@ struct DisguiseSettingsView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         InstructionRow(
                             icon: "checkmark.circle.fill",
-                            text: String(localized: "disguise.tip.calculator"),
+                            text: String(localized: "calculatorLogin.tip.calculator"),
                             color: .green
                         )
 
                         InstructionRow(
                             icon: "eye.slash.fill",
-                            text: String(localized: "disguise.tip.numbersOnly"),
+                            text: String(localized: "calculatorLogin.tip.numbersOnly"),
                             color: .blue
                         )
 
                         InstructionRow(
                             icon: "lock.fill",
-                            text: String(localized: "disguise.tip.noDisplay"),
+                            text: String(localized: "calculatorLogin.tip.noDisplay"),
                             color: .purple
                         )
 
                         InstructionRow(
                             icon: "exclamationmark.triangle.fill",
-                            text: String(localized: "disguise.tip.noFeedback"),
+                            text: String(localized: "calculatorLogin.tip.noFeedback"),
                             color: .orange
                         )
                     }
                 } header: {
-                    Text(String(localized: "disguise.instructions.title"))
+                    Text(String(localized: "calculatorLogin.instructions.title"))
                 }
 
                 // 安全提示
@@ -116,10 +120,10 @@ struct DisguiseSettingsView: View {
                                 .foregroundColor(.blue)
 
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(String(localized: "disguise.security.title"))
+                                Text(String(localized: "calculatorLogin.security.title"))
                                     .fontWeight(.semibold)
 
-                                Text(String(localized: "disguise.security.tips"))
+                                Text(String(localized: "calculatorLogin.security.tips"))
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -128,7 +132,7 @@ struct DisguiseSettingsView: View {
                 }
             }
         }
-        .navigationTitle(String(localized: "disguise.title"))
+        .navigationTitle(String(localized: "calculatorLogin.settings.title"))
         .onAppear {
             // 迁移旧密码
             keychainService.migrateDisguisePasswordFromUserDefaults()
@@ -136,17 +140,17 @@ struct DisguiseSettingsView: View {
             hasDisguisePassword = keychainService.isDisguisePasswordSet()
         }
         .alert(
-            String(localized: "disguise.changePassword.required.title"),
+            String(localized: "calculatorLogin.changePassword.required.title"),
             isPresented: $showPasswordChangeRequired
         ) {
             Button(String(localized: "common.ok")) {
-                // User needs to change their main password to enable disguise mode
+                // User needs to change their main password to enable calculator login mode
             }
             Button(String(localized: "common.cancel"), role: .cancel) {
                 disguiseModeEnabled = false
             }
         } message: {
-            Text(String(localized: "disguise.changePassword.required.message"))
+            Text(String(localized: "calculatorLogin.changePassword.required.message"))
         }
     }
 
@@ -159,15 +163,15 @@ struct DisguiseSettingsView: View {
             return
         }
 
-        // 检查主密码是否符合伪装模式要求（仅数字和小数点）
+        // 检查主密码是否符合计算器登录模式要求（仅数字和小数点）
         if isValidDisguisePassword(sessionPassword) {
             // 主密码符合要求，保存到 Keychain
             do {
                 try keychainService.saveDisguisePassword(sessionPassword)
                 hasDisguisePassword = true
-                print("✅ 主密码符合伪装模式要求，已自动设置")
+                print("✅ 主密码符合计算器登录模式要求，已自动设置")
             } catch {
-                print("❌ 保存伪装密码失败: \(error)")
+                print("❌ 保存计算器登录密码失败: \(error)")
                 disguiseModeEnabled = false
             }
         } else {

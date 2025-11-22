@@ -288,11 +288,11 @@ struct SettingsView: View {
 
     private var securitySection: some View {
         Section {
-            // 伪装模式
+            // 计算器登录模式
             NavigationLink {
                 DisguiseSettingsView()
             } label: {
-                Label(String(localized: "settings.disguiseMode"), systemImage: "theatermasks")
+                Label(String(localized: "settings.calculatorLogin"), systemImage: "function")
             }
 
             // 访客模式（仅在主人模式且已购买时显示）

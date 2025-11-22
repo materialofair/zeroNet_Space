@@ -50,7 +50,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "伪装密码与主密码不一致，请重新登录。"
+            "value": "计算器登录密码与主密码不一致，请重新登录。"
           }
         }
       }
@@ -532,19 +532,19 @@
         }
       }
     },
-    "disguise.calculator.title": {
+    "calculatorLogin.title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Disguise Calculator"
+            "value": "Calculator Login Calculator"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "伪装计算器"
+            "value": "计算器登录计算器"
           }
         }
       }
@@ -566,24 +566,24 @@
         }
       }
     },
-    "disguise.changePassword.required.message": {
+    "calculatorLogin.changePassword.required.message": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Disguise mode requires main password to contain only numbers and decimal point. Current password contains letters or special characters. Please change to numbers and decimal point only."
+            "value": "Calculator Login mode requires main password to contain only numbers and decimal point. Current password contains letters or special characters. Please change to numbers and decimal point only."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "伪装模式要求主密码仅包含数字和小数点。当前主密码包含字母或特殊字符，请修改为仅包含数字和小数点的密码。"
+            "value": "计算器登录模式要求主密码仅包含数字和小数点。当前主密码包含字母或特殊字符，请修改为仅包含数字和小数点的密码。"
           }
         }
       }
     },
-    "disguise.changePassword.required.title": {
+    "calculatorLogin.changePassword.required.title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -651,7 +651,7 @@
         }
       }
     },
-    "disguise.enable.description": {
+    "calculatorLogin.enable.description": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -668,36 +668,36 @@
         }
       }
     },
-    "disguise.enable.message": {
+    "calculatorLogin.enable.message": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "When disguise mode is enabled, the app launches as a calculator. Set a password sequence to unlock the real interface."
+            "value": "When calculator login mode is enabled, the app launches as a calculator. Set a password sequence to unlock the real interface."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "启用伪装模式后，应用将以计算器界面启动。请设置一个密码序列用于解锁应用。"
+            "value": "启用计算器登录模式后，应用将以计算器界面启动。请设置一个密码序列用于解锁应用。"
           }
         }
       }
     },
-    "disguise.enable.title": {
+    "calculatorLogin.enable.title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enable Disguise Mode"
+            "value": "Enable Calculator Login Mode"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "启用伪装模式"
+            "value": "启用计算器登录模式"
           }
         }
       }
@@ -906,7 +906,7 @@
         }
       }
     },
-    "disguise.instructions.example": {
+    "calculatorLogin.instructions.example": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -923,7 +923,7 @@
         }
       }
     },
-    "disguise.instructions.howTo": {
+    "calculatorLogin.instructions.howTo": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -940,7 +940,7 @@
         }
       }
     },
-    "disguise.instructions.title": {
+    "calculatorLogin.instructions.title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -974,7 +974,7 @@
         }
       }
     },
-    "disguise.passwordSequence": {
+    "calculatorLogin.passwordSequence": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -1014,13 +1014,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Current password meets disguise mode requirements"
+            "value": "Current password meets calculator login mode requirements"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "当前主密码符合伪装模式要求"
+            "value": "当前主密码符合计算器登录模式要求"
           }
         }
       }
@@ -1127,7 +1127,7 @@
         }
       }
     },
-    "disguise.security.tips": {
+    "calculatorLogin.security.tips": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -1144,19 +1144,19 @@
         }
       }
     },
-    "disguise.security.title": {
+    "calculatorLogin.security.title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Disguise Mode Security Tips"
+            "value": "Calculator Login Mode Security Tips"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "伪装模式安全提示"
+            "value": "计算器登录模式安全提示"
           }
         }
       }
@@ -1178,7 +1178,7 @@
         }
       }
     },
-    "disguise.tip.calculator": {
+    "calculatorLogin.tip.calculator": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -1195,7 +1195,7 @@
         }
       }
     },
-    "disguise.tip.noDisplay": {
+    "calculatorLogin.tip.noDisplay": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -1212,7 +1212,7 @@
         }
       }
     },
-    "disguise.tip.noFeedback": {
+    "calculatorLogin.tip.noFeedback": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -1224,12 +1224,12 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "密码错误时不会有任何提示（伪装特性）"
+            "value": "密码错误时不会有任何提示（计算器登录特性）"
           }
         }
       }
     },
-    "disguise.tip.numbersOnly": {
+    "calculatorLogin.tip.numbersOnly": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -1246,24 +1246,24 @@
         }
       }
     },
-    "disguise.title": {
+    "calculatorLogin.settings.title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Disguise Mode"
+            "value": "Calculator Login Mode"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "伪装模式"
+            "value": "计算器登录模式"
           }
         }
       }
     },
-    "disguise.unlockPassword": {
+    "calculatorLogin.unlockPassword": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -3266,7 +3266,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "创建一个伪装密码 - 当有人使用它时，会看到一个空应用（隐私保护利器！）"
+            "value": "创建一个计算器登录密码 - 当有人使用它时，会看到一个空应用（隐私保护利器！）"
           }
         }
       }
@@ -8932,23 +8932,6 @@
         }
       }
     },
-    "settings.disguiseMode": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Disguise Mode"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "伪装模式"
-          }
-        }
-      }
-    },
     "settings.display": {
       "extractionState": "manual",
       "localizations": {
@@ -10436,7 +10419,7 @@
         }
       }
     },
-    "disguise.passwordSequence.autoSynced": {
+    "calculatorLogin.passwordSequence.autoSynced": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -10453,7 +10436,7 @@
         }
       }
     },
-    "disguise.passwordSequence.notSet": {
+    "calculatorLogin.passwordSequence.notSet": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -10470,19 +10453,36 @@
         }
       }
     },
-    "disguise.passwordSequence.autoSyncHint": {
+    "calculatorLogin.passwordSequence.autoSyncHint": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Password sequence automatically syncs with your main password. Change your main password to update the disguise mode unlock sequence."
+            "value": "Password sequence automatically syncs with your main password. Change your main password to update the calculator login mode unlock sequence."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "密码序列自动与主密码同步。修改主密码即可更新伪装模式解锁序列。"
+            "value": "密码序列自动与主密码同步。修改主密码即可更新计算器登录模式解锁序列。"
+          }
+        }
+      }
+    },
+    "settings.calculatorLogin": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculator Login Mode"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "计算器登录模式"
           }
         }
       }
