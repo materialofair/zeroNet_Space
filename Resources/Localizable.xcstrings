@@ -10486,6 +10486,40 @@
           }
         }
       }
+    },
+    "settings.changePassword.error.calculatorLoginRestriction": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calculator Login Mode is enabled. New password must only contain numbers and decimal points."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "计算器登录模式已启用，新密码只能包含数字和小数点。"
+          }
+        }
+      }
+    },
+    "settings.changePassword.calculatorLoginHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⚠️ Calculator Login Mode is enabled: Password must only contain numbers (0-9) and decimal points (.)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⚠️ 计算器登录模式已启用：密码只能包含数字(0-9)和小数点(.)"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

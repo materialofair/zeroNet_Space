@@ -491,6 +491,10 @@ struct ChangePasswordView: View {
     @State private var errorMessage: String?
     @State private var isChanging = false
 
+    private var isCalculatorLoginEnabled: Bool {
+        UserDefaults.standard.bool(forKey: AppConstants.UserDefaultsKeys.disguiseModeEnabled)
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -499,16 +503,26 @@ struct ChangePasswordView: View {
                         String(localized: "settings.changePassword.current"), text: $currentPassword
                     )
                     SecureField(
-                        String(localized: "settings.changePassword.new"), text: $newPassword)
+                        String(localized: "settings.changePassword.new"), text: $newPassword
+                    )
+                    .keyboardType(isCalculatorLoginEnabled ? .decimalPad : .default)
                     SecureField(
                         String(localized: "settings.changePassword.confirm"), text: $confirmPassword
                     )
+                    .keyboardType(isCalculatorLoginEnabled ? .decimalPad : .default)
                 } header: {
                     Text(String(localized: "settings.changePassword"))
                 } footer: {
                     if let error = errorMessage {
                         Text(error)
                             .foregroundColor(.red)
+                    } else if isCalculatorLoginEnabled {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(String(localized: "settings.passwordRequirement"))
+                            Text(String(localized: "settings.changePassword.calculatorLoginHint"))
+                                .foregroundColor(.orange)
+                                .fontWeight(.medium)
+                        }
                     } else {
                         Text(String(localized: "settings.passwordRequirement"))
                     }
@@ -573,6 +587,21 @@ struct ChangePasswordView: View {
         guard authViewModel.verifyPassword(currentPassword) else {
             errorMessage = String(localized: "settings.changePassword.error.invalidCurrent")
             return
+        }
+
+        // 🎭 检查计算器登录模式限制
+        let calculatorLoginEnabled = UserDefaults.standard.bool(
+            forKey: AppConstants.UserDefaultsKeys.disguiseModeEnabled
+        )
+        if calculatorLoginEnabled {
+            // 验证新密码是否符合计算器登录模式要求（仅数字和小数点）
+            let allowedCharacters = CharacterSet(charactersIn: "0123456789.")
+            let passwordCharacters = CharacterSet(charactersIn: newPassword)
+            if !passwordCharacters.isSubset(of: allowedCharacters) {
+                errorMessage = String(
+                    localized: "settings.changePassword.error.calculatorLoginRestriction")
+                return
+            }
         }
 
         // 开始修改密码
