@@ -54,9 +54,34 @@ class PurchaseManager: ObservableObject {
     /// 购买状态监听任务
     private var updateListenerTask: Task<Void, Error>?
 
+    /// 是否已初始化 StoreKit（用于延迟加载，避免触发网络权限）
+    private var isStoreKitInitialized = false
+
     // MARK: - Initialization
 
     private init() {
+        // 🔴 重要：不在 init 中初始化 StoreKit，避免触发网络权限请求
+        // StoreKit 会在首次调用 loadProducts() 或 purchase() 时才初始化
+
+        // 🎭 检查演示模式
+        if AppConstants.isDemoModeEnabled {
+            hasUnlockedUnlimited = true
+            print("🎭 PurchaseManager初始化 - 检测到演示模式，自动解锁")
+        }
+    }
+
+    deinit {
+        updateListenerTask?.cancel()
+    }
+
+    // MARK: - Lazy Initialization
+
+    /// 延迟初始化 StoreKit（仅在首次需要时调用）
+    private func initializeStoreKitIfNeeded() {
+        guard !isStoreKitInitialized else { return }
+
+        isStoreKitInitialized = true
+
         // 启动购买状态监听
         updateListenerTask = listenForTransactions()
 
@@ -66,14 +91,13 @@ class PurchaseManager: ObservableObject {
         }
     }
 
-    deinit {
-        updateListenerTask?.cancel()
-    }
-
     // MARK: - Public Methods
 
     /// 加载产品信息
     func loadProducts() async {
+        // 🔴 延迟初始化：仅在用户主动访问内购功能时才初始化 StoreKit
+        initializeStoreKitIfNeeded()
+
         isLoading = true
         purchaseError = nil
 
@@ -97,6 +121,9 @@ class PurchaseManager: ObservableObject {
 
     /// 购买产品
     func purchase() async -> Bool {
+        // 🔴 延迟初始化：仅在用户主动购买时才初始化 StoreKit
+        initializeStoreKitIfNeeded()
+
         guard
             let product = products.first(where: {
                 $0.id == PurchaseProduct.unlimitedImport.rawValue
@@ -166,6 +193,9 @@ class PurchaseManager: ObservableObject {
 
     /// 恢复购买
     func restorePurchases() async {
+        // 🔴 延迟初始化：仅在用户主动恢复购买时才初始化 StoreKit
+        initializeStoreKitIfNeeded()
+
         isLoading = true
         purchaseError = nil
 
@@ -223,6 +253,13 @@ class PurchaseManager: ObservableObject {
 
     /// 更新购买状态
     private func updatePurchaseStatus() async {
+        // 🎭 如果启用了演示模式，直接解锁
+        if AppConstants.isDemoModeEnabled {
+            hasUnlockedUnlimited = true
+            print("🎭 演示模式已启用 - 自动解锁无限导入")
+            return
+        }
+
         var unlocked = false
 
         // 检查所有当前的权利
