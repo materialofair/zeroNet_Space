@@ -46,7 +46,7 @@ class KeychainService {
 
     // MARK: - Constants
 
-    private let service = "com.wq.ZeroNet-Space"
+    private let service = "com.zeronetspace.unlimited-imports"
     private let passwordAccount = "userPassword"
     private let saltAccount = "passwordSalt"
     private let isSetAccount = "isPasswordSet"

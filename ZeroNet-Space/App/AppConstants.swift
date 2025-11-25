@@ -19,7 +19,7 @@ enum AppConstants {
     static let appVersion = "1.0"
 
     /// Bundle Identifier
-    static let bundleIdentifier = "wq.ZeroNet-Space"
+    static let bundleIdentifier = "com.zeronetspace.unlimited-imports"
 
     /// GitHub仓库地址
     static let githubRepositoryURL = "https://github.com/materialofair/zeroNet_Space"

@@ -8,7 +8,8 @@
       "Skill(research-methodology)",
       "SlashCommand(/plan Complete iOS app internationalization by adding ~150 missing string keys to Localizable.xcstrings and updating all 24 view files to use String(localized:) instead of hardcoded Chinese strings. Current file has ~60 keys, need to add keys for: export (20 keys), folders (25 keys), tags (15 keys), disguise mode (40 keys), file preview (15 keys), gallery (15 keys), import (15 keys), network verification (30 keys), media detail (20 keys), and common actions (10 keys). All view files must be updated to replace hardcoded strings with localization keys.)",
       "SlashCommand(/plan:*)",
-      "Bash(xcodebuild:*)"
+      "Bash(xcodebuild:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": []

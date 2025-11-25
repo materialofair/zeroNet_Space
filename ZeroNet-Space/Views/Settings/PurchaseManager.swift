@@ -12,7 +12,8 @@ import StoreKit
 /// 内购产品ID
 enum PurchaseProduct: String, CaseIterable {
     // Keep this ID in sync with Products.storekit so StoreKit can return the stubbed item.
-    case unlimitedImport = "com.zeronetspace.unlimited_imports"
+    // ⚠️ 注意：必须与 App Store Connect 中的产品 ID 完全一致（包括连字符/下划线）
+    case unlimitedImport = "com.zeronetspace.unlimited-imports"
 
     var displayName: String {
         switch self {
@@ -104,15 +105,38 @@ class PurchaseManager: ObservableObject {
         do {
             // 从App Store加载产品
             let productIds = PurchaseProduct.allCases.map { $0.rawValue }
+            print("🔍 [IAP Debug] 开始请求产品")
+            print("🔍 [IAP Debug] 产品 IDs: \(productIds)")
+
             products = try await Product.products(for: productIds)
 
-            print("✅ 成功加载 \(products.count) 个内购产品")
+            print("✅ [IAP Debug] 成功加载 \(products.count) 个内购产品")
+
+            if products.isEmpty {
+                print("⚠️ [IAP Debug] 警告：未找到任何产品！")
+                print("📋 [IAP Debug] 可能原因：")
+                print("   1. App Store Connect 中产品状态不是'准备提交'或'已批准'")
+                print("   2. 未使用沙盒测试账号")
+                print("   3. Bundle ID 不匹配")
+                print("   4. 产品同步未完成（等待2-24小时）")
+                print("   5. 协议、税务和银行信息未完成")
+            } else {
+                for product in products {
+                    print("   📦 [IAP Debug] 产品: \(product.id)")
+                    print("      名称: \(product.displayName)")
+                    print("      价格: \(product.displayPrice)")
+                    print("      类型: \(product.type)")
+                }
+            }
 
             // 检查购买状态
             await updatePurchaseStatus()
 
         } catch {
-            print("❌ 加载产品失败: \(error)")
+            print("❌ [IAP Debug] 加载产品失败")
+            print("   错误类型: \(type(of: error))")
+            print("   错误描述: \(error.localizedDescription)")
+            print("   错误详情: \(error)")
             purchaseError = String(localized: "iap.error.loadFailed")
         }
 
@@ -124,14 +148,24 @@ class PurchaseManager: ObservableObject {
         // 🔴 延迟初始化：仅在用户主动购买时才初始化 StoreKit
         initializeStoreKitIfNeeded()
 
+        print("🛒 [IAP Debug] 开始购买流程")
+        print("   当前已加载产品数量: \(products.count)")
+        print("   已加载的产品 IDs: \(products.map { $0.id })")
+        print("   寻找产品 ID: \(PurchaseProduct.unlimitedImport.rawValue)")
+
         guard
             let product = products.first(where: {
                 $0.id == PurchaseProduct.unlimitedImport.rawValue
             })
         else {
+            print("❌ [IAP Debug] 未找到产品！")
+            print("   可能原因：loadProducts() 未成功加载产品")
+            print("   建议：先调用 loadProducts() 再调用 purchase()")
             purchaseError = String(localized: "iap.error.productNotFound")
             return false
         }
+
+        print("✅ [IAP Debug] 找到产品: \(product.displayName)")
 
         isLoading = true
         purchaseError = nil
