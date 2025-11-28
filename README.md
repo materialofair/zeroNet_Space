@@ -314,9 +314,7 @@ For detailed license terms, see LICENSE file.
 
 #### Use App Store Official Version (Recommended)
 
-[![Download on App Store](https://developer.apple.com/app-store/marketing/guidelines/images/badge-download-on-the-app-store.svg)](https://apps.apple.com/app/zeronet-space)
-
-> Coming soon, stay tuned!
+[![Download on App Store](https://developer.apple.com/app-store/marketing/guidelines/images/badge-download-on-the-app-store.svg)](https://apps.apple.com/us/app/zeronet-space/id6755504480)
 
 #### Compile Yourself (Advanced Users)
 
@@ -701,9 +699,7 @@ IV: 12字节随机（每次加密唯一）
 
 #### 使用 App Store 官方版本（推荐）
 
-[![Download on App Store](https://developer.apple.com/app-store/marketing/guidelines/images/badge-download-on-the-app-store.svg)](https://apps.apple.com/app/零网络空间)
-
-> 即将上架，敬请期待！
+[![Download on App Store](https://developer.apple.com/app-store/marketing/guidelines/images/badge-download-on-the-app-store.svg)](https://apps.apple.com/us/app/zeronet-space/id6755504480)
 
 #### 自己编译（高级用户）
 
