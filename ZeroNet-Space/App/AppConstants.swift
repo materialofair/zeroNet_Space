@@ -31,14 +31,11 @@ enum AppConstants {
 
     // MARK: - Demo Mode (For App Store Review)
 
-    // 演示口令仅在带 DEMO_MODE 编译条件的审核构建中生效。
-    // 公开发行/开源构建不包含该口令，避免它成为人尽皆知的 IAP 后门。
-    // 提审时在 target 的 Active Compilation Conditions 中添加 DEMO_MODE。
-    #if DEMO_MODE
-        /// 演示模式密码（用于App Store审核）
-        /// ⚠️ 在审核说明中告知审核团队使用此密码即可解锁所有功能
-        static let demoPassword = "0.00000"
-    #endif
+    /// 演示模式密码（用于App Store审核）
+    /// ⚠️ 在审核说明中告知审核团队使用此密码即可解锁所有功能。
+    /// 已知取舍：App 审核需要演示入口且审核包=上架包，故所有构建保留此口令；
+    /// 开源仓库中口令本就公开，等同于放弃对该 IAP 的防绕过保护
+    static let demoPassword = "0.00000"
 
     /// 演示模式UserDefaults键
     private static let demoModeKey = "DemoModeEnabled"
@@ -50,11 +47,7 @@ enum AppConstants {
 
     /// 检查密码是否为演示密码
     static func isDemoPassword(_ password: String) -> Bool {
-        #if DEMO_MODE
-            return password == demoPassword
-        #else
-            return false
-        #endif
+        return password == demoPassword
     }
 
     /// 启用演示模式
