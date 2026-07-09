@@ -15,8 +15,13 @@ enum AppConstants {
     /// 应用名称
     static let appName = String(localized: "app.name")
 
-    /// 应用版本
-    static let appVersion = "1.0"
+    /// 应用版本（从 Info.plist 读取，跟随 MARKETING_VERSION，避免手写过期）
+    static let appVersion =
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.1.0"
+
+    /// 构建号（跟随 CURRENT_PROJECT_VERSION）
+    static let buildNumber =
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "6"
 
     /// Bundle Identifier
     static let bundleIdentifier = "com.zeronetspace.unlimited-imports"
@@ -26,9 +31,14 @@ enum AppConstants {
 
     // MARK: - Demo Mode (For App Store Review)
 
-    /// 演示模式密码（用于App Store审核）
-    /// ⚠️ 在审核说明中告知审核团队使用此密码即可解锁所有功能
-    static let demoPassword = "0.00000"
+    // 演示口令仅在带 DEMO_MODE 编译条件的审核构建中生效。
+    // 公开发行/开源构建不包含该口令，避免它成为人尽皆知的 IAP 后门。
+    // 提审时在 target 的 Active Compilation Conditions 中添加 DEMO_MODE。
+    #if DEMO_MODE
+        /// 演示模式密码（用于App Store审核）
+        /// ⚠️ 在审核说明中告知审核团队使用此密码即可解锁所有功能
+        static let demoPassword = "0.00000"
+    #endif
 
     /// 演示模式UserDefaults键
     private static let demoModeKey = "DemoModeEnabled"
@@ -40,7 +50,11 @@ enum AppConstants {
 
     /// 检查密码是否为演示密码
     static func isDemoPassword(_ password: String) -> Bool {
-        return password == demoPassword
+        #if DEMO_MODE
+            return password == demoPassword
+        #else
+            return false
+        #endif
     }
 
     /// 启用演示模式
@@ -166,6 +180,9 @@ extension AppConstants {
 
         /// 访客模式启用状态
         static let guestModeEnabled = "guestModeEnabled"
+
+        /// 离开后自动锁定时长（秒）
+        static let autoLockTimeout = "autoLockTimeout"
 
         /// 应用已完成初始化（用于检测卸载重装）
         static let appInitialized = "appInitialized"

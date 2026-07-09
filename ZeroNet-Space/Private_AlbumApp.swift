@@ -18,6 +18,13 @@ struct Private_AlbumApp: App {
     @StateObject private var guestModeManager = GuestModeManager.shared
     @State private var showLaunchScreen = true
 
+    // App 级 scenePhase 是所有 scene 的聚合状态。当前未开启 iPad 多窗口
+    // （无 UIApplicationSupportsMultipleScenes），单 scene 下与窗口状态等价；
+    // 若日后启用多窗口，隐私遮罩/自动锁定需下沉到 scene 级别
+    @Environment(\.scenePhase) private var scenePhase
+    /// 最近一次进入后台的时间（用于自动锁定判定）
+    @State private var lastBackgroundedAt: Date?
+
     // MARK: - SwiftData Container
 
     var sharedModelContainer: ModelContainer = {
@@ -53,7 +60,9 @@ struct Private_AlbumApp: App {
                         let disguiseModeEnabled = UserDefaults.standard.bool(
                             forKey: AppConstants.UserDefaultsKeys.disguiseModeEnabled)
 
-                        if disguiseModeEnabled {
+                        // 仅当伪装密码确实存在时才展示计算器，
+                        // 否则用户会被锁死在没有解锁路径的计算器界面
+                        if disguiseModeEnabled && KeychainService.shared.isDisguisePasswordSet() {
                             // 伪装模式启用 - 显示计算器界面
                             CalculatorView()
                                 .environmentObject(authViewModel)
@@ -85,6 +94,14 @@ struct Private_AlbumApp: App {
                         .transition(.opacity)
                         .zIndex(1)
                 }
+
+                // 隐私遮罩：离开前台时盖住已解密内容，
+                // 防止系统为多任务切换器截取的快照泄露隐私
+                if authViewModel.isAuthenticated && scenePhase != .active && !showLaunchScreen {
+                    LaunchScreenView()
+                        .transition(.opacity)
+                        .zIndex(2)
+                }
             }
             .task {
                 // 显示启动页1.5秒
@@ -93,7 +110,37 @@ struct Private_AlbumApp: App {
                     showLaunchScreen = false
                 }
             }
+            .onChange(of: scenePhase) { _, newPhase in
+                switch newPhase {
+                case .background:
+                    lastBackgroundedAt = Date()
+                case .active:
+                    autoLockIfNeeded()
+                default:
+                    break
+                }
+            }
         }
         .modelContainer(sharedModelContainer)
+    }
+
+    // MARK: - Auto Lock
+
+    /// 回到前台时按"离开后自动锁定"设置决定是否登出。
+    /// 只在真正进过后台（.background）后计时；短暂的 .inactive
+    /// （如下拉通知中心、来电）不触发锁定，但隐私遮罩仍会覆盖
+    private func autoLockIfNeeded() {
+        defer { lastBackgroundedAt = nil }
+
+        guard authViewModel.isAuthenticated,
+            let backgroundedAt = lastBackgroundedAt
+        else { return }
+
+        let timeout = AppSettings.shared.autoLockTimeout
+        guard timeout != .never else { return }
+
+        if Date().timeIntervalSince(backgroundedAt) >= Double(timeout.rawValue) {
+            authViewModel.logout()
+        }
     }
 }

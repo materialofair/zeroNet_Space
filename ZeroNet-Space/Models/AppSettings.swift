@@ -10,6 +10,25 @@ internal import Combine
 import Foundation
 import SwiftUI
 
+/// 离开后自动锁定时长
+enum AutoLockTimeout: Int, CaseIterable, Identifiable {
+    case immediately = 0
+    case oneMinute = 60
+    case fiveMinutes = 300
+    case never = -1
+
+    var id: Int { rawValue }
+
+    var title: String {
+        switch self {
+        case .immediately: return String(localized: "settings.autoLock.immediately")
+        case .oneMinute: return String(localized: "settings.autoLock.after1min")
+        case .fiveMinutes: return String(localized: "settings.autoLock.after5min")
+        case .never: return String(localized: "settings.autoLock.never")
+        }
+    }
+}
+
 /// 应用设置管理器
 class AppSettings: ObservableObject {
 
@@ -77,6 +96,14 @@ class AppSettings: ObservableObject {
         }
     }
 
+    /// 离开后自动锁定时长
+    @Published var autoLockTimeout: AutoLockTimeout {
+        didSet {
+            defaults.set(
+                autoLockTimeout.rawValue, forKey: AppConstants.UserDefaultsKeys.autoLockTimeout)
+        }
+    }
+
     // MARK: - Initialization
 
     private init() {
@@ -109,6 +136,16 @@ class AppSettings: ObservableObject {
 
         self.guestModeEnabled = defaults.bool(
             forKey: AppConstants.UserDefaultsKeys.guestModeEnabled)
+
+        // 未设置时默认"立即锁定"（隐私优先）
+        if defaults.object(forKey: AppConstants.UserDefaultsKeys.autoLockTimeout) == nil {
+            self.autoLockTimeout = .immediately
+        } else {
+            self.autoLockTimeout =
+                AutoLockTimeout(
+                    rawValue: defaults.integer(forKey: AppConstants.UserDefaultsKeys.autoLockTimeout)
+                ) ?? .immediately
+        }
 
         // 🎭 检查演示模式状态，如果已启用则自动解锁功能
         if AppConstants.isDemoModeEnabled {

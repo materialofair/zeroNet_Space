@@ -300,6 +300,15 @@ struct SettingsView: View {
                 guestModeRow
             }
 
+            // 离开后自动锁定
+            Picker(selection: $settings.autoLockTimeout) {
+                ForEach(AutoLockTimeout.allCases) { option in
+                    Text(option.title).tag(option)
+                }
+            } label: {
+                Label(String(localized: "settings.autoLock.title"), systemImage: "lock.rotation")
+            }
+
             // 修改密码
             Button {
                 showChangePasswordSheet = true
@@ -332,7 +341,7 @@ struct SettingsView: View {
             HStack {
                 Label(String(localized: "settings.version"), systemImage: "info.circle")
                 Spacer()
-                Text("1.0.0")
+                Text(AppConstants.appVersion)
                     .foregroundColor(.secondary)
             }
 
