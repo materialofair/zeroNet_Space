@@ -144,7 +144,9 @@ struct DisguiseSettingsView: View {
             isPresented: $showPasswordChangeRequired
         ) {
             Button(String(localized: "common.ok")) {
-                // User needs to change their main password to enable calculator login mode
+                // 主密码不符合要求、未写入伪装密码，必须回退开关，
+                // 否则会在没有可用密码的情况下展示计算器登录界面
+                disguiseModeEnabled = false
             }
             Button(String(localized: "common.cancel"), role: .cancel) {
                 disguiseModeEnabled = false

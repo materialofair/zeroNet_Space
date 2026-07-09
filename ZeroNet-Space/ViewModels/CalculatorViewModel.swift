@@ -23,14 +23,9 @@ class CalculatorViewModel: ObservableObject {
         keychainService.migrateDisguisePasswordFromUserDefaults()
 
         // 从 Keychain 读取密码序列
+        // 未设置时保持为空，checkPasswordSequence 会拒绝该路径解锁，
+        // 不提供任何默认密码
         self.passwordSequence = keychainService.loadDisguisePassword() ?? ""
-
-        // 如果未设置密码序列，使用默认密码
-        if passwordSequence.isEmpty {
-            self.passwordSequence = "1234"  // 默认密码
-        }
-
-        print("🔐 伪装模式已激活，密码序列长度: \(passwordSequence.count)")
     }
 
     // MARK: - 计算器逻辑
@@ -157,13 +152,8 @@ class CalculatorViewModel: ObservableObject {
         // 检查访客密码是否已设置
         let hasGuestPassword = keychainService.isGuestPasswordSet()
 
-        print("🔍 检查密码序列: '\(passwordInput)'")
-        print("   主密码序列: '\(passwordSequence)'")
-        print("   访客密码已设置: \(hasGuestPassword)")
-
-        // 检查是否匹配主密码
-        if passwordInput == passwordSequence {
-            print("🔓 主密码匹配！准备解锁到主人模式...")
+        // 检查是否匹配主密码（未设置密码序列时不允许此路径解锁）
+        if !passwordSequence.isEmpty && passwordInput == passwordSequence {
             shouldUnlock = true
             state.inputHistory.removeAll()
 
@@ -178,7 +168,6 @@ class CalculatorViewModel: ObservableObject {
         }
         // 检查是否匹配访客密码（通过KeychainService验证）
         else if hasGuestPassword && keychainService.verifyGuestPassword(passwordInput) {
-            print("🔓 访客密码匹配！准备解锁到访客模式...")
             shouldUnlock = true
             state.inputHistory.removeAll()
 

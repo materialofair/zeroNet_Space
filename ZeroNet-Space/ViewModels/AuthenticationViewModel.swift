@@ -37,17 +37,11 @@ final class AuthenticationViewModel: ObservableObject {
     /// 是否显示密码
     @Published var showPassword: Bool = false
 
-    /// 加密用密码（Data格式，支持安全清理）
-    @Published private(set) var sessionPasswordData: Data? {
+    /// 加密用密码（引用语义容器，置换/登出时就地清零）
+    @Published private(set) var sessionPasswordData: SecureBytes? {
         willSet {
             // 零化旧密码内存
-            if var oldData = sessionPasswordData {
-                oldData.withUnsafeMutableBytes { bytes in
-                    if let baseAddress = bytes.baseAddress {
-                        memset(baseAddress, 0, bytes.count)
-                    }
-                }
-            }
+            sessionPasswordData?.wipe()
         }
     }
 
@@ -56,8 +50,7 @@ final class AuthenticationViewModel: ObservableObject {
 
     /// 获取会话密码（String格式，仅在需要时转换）
     var sessionPassword: String? {
-        guard let data = sessionPasswordData else { return nil }
-        return String(data: data, encoding: .utf8)
+        sessionPasswordData?.string
     }
 
     /// 登录失败次数
@@ -118,7 +111,7 @@ final class AuthenticationViewModel: ObservableObject {
             // 访客模式解锁
             await MainActor.run {
                 // 保存访客密码
-                sessionPasswordData = Data(password.utf8)
+                sessionPasswordData = SecureBytes(password)
                 sessionLoginPassword = password
                 isAuthenticated = true
 
@@ -137,7 +130,7 @@ final class AuthenticationViewModel: ObservableObject {
                 }.value
 
                 await MainActor.run {
-                    sessionPasswordData = Data(dataPassword.utf8)
+                    sessionPasswordData = SecureBytes(dataPassword)
                     sessionLoginPassword = password
                     isAuthenticated = true
 
@@ -215,8 +208,8 @@ final class AuthenticationViewModel: ObservableObject {
             do {
                 let dataPassword = try keychainService.savePassword(password)
 
-                // 保存成功 - 使用 Data 格式存储
-                sessionPasswordData = Data(dataPassword.utf8)
+                // 保存成功
+                sessionPasswordData = SecureBytes(dataPassword)
                 sessionLoginPassword = password
                 isPasswordSet = true
                 isAuthenticated = true
@@ -309,8 +302,7 @@ final class AuthenticationViewModel: ObservableObject {
                         try self.keychainService.retrieveDataPassword(using: inputPassword)
                     }.value
 
-                    // 使用 Data 格式存储
-                    sessionPasswordData = Data(dataPassword.utf8)
+                    sessionPasswordData = SecureBytes(dataPassword)
                     sessionLoginPassword = inputPassword
                     isAuthenticated = true
 
@@ -337,7 +329,7 @@ final class AuthenticationViewModel: ObservableObject {
             } else if guestMatch {
                 // 访客模式登录成功
                 // 保存访客密码以便伪装模式解锁时使用
-                sessionPasswordData = Data(inputPassword.utf8)
+                sessionPasswordData = SecureBytes(inputPassword)
                 sessionLoginPassword = inputPassword
                 isAuthenticated = true
 
@@ -379,14 +371,7 @@ final class AuthenticationViewModel: ObservableObject {
     func logout() {
         isAuthenticated = false
 
-        // 🔒 安全清理密码内存
-        if var passwordData = sessionPasswordData {
-            passwordData.withUnsafeMutableBytes { bytes in
-                if let baseAddress = bytes.baseAddress {
-                    memset(baseAddress, 0, bytes.count)
-                }
-            }
-        }
+        // 🔒 安全清理密码内存（willSet 中就地清零）
         sessionPasswordData = nil
         sessionLoginPassword = nil
 
@@ -420,8 +405,7 @@ final class AuthenticationViewModel: ObservableObject {
             oldPassword: oldPassword,
             newPassword: newPassword
         )
-        // 使用 Data 格式存储
-        sessionPasswordData = Data(dataPassword.utf8)
+        sessionPasswordData = SecureBytes(dataPassword)
         sessionLoginPassword = newPassword
     }
 

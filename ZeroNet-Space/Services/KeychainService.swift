@@ -42,7 +42,9 @@ class KeychainService {
     // MARK: - Singleton
 
     static let shared = KeychainService()
-    private init() {}
+    private init() {
+        migrateFromLegacyServiceIfNeeded()
+    }
 
     // MARK: - Constants
 
@@ -136,6 +138,9 @@ class KeychainService {
         // 清空计算器登录密码
         try? deleteFromKeychain(account: disguisePasswordAccount)
         try? deleteFromKeychain(account: isDisguiseSetAccount)
+
+        // 清空私密笔记草稿
+        deleteSecretNoteDraft()
 
         print("✅ 已清空所有Keychain数据（卸载重装检测）")
     }
@@ -519,5 +524,102 @@ extension KeychainService {
         }
 
         return false
+    }
+}
+
+// MARK: - Secret Note Draft Storage
+
+extension KeychainService {
+
+    private var secretNoteDraftAccount: String { "secretNoteDraft" }
+
+    /// 保存私密笔记草稿（覆盖旧值）
+    /// - Returns: 是否写入成功（锁屏等场景下 Keychain 可能不可写）
+    @discardableResult
+    func saveSecretNoteDraft(_ data: Data) -> Bool {
+        do {
+            try saveToKeychain(account: secretNoteDraftAccount, data: data)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    /// 读取私密笔记草稿
+    func loadSecretNoteDraft() -> Data? {
+        try? readFromKeychain(account: secretNoteDraftAccount)
+    }
+
+    /// 删除私密笔记草稿
+    func deleteSecretNoteDraft() {
+        try? deleteFromKeychain(account: secretNoteDraftAccount)
+    }
+}
+
+// MARK: - Legacy Service Migration
+
+extension KeychainService {
+
+    /// 早期构建使用的 Keychain service 标识符。
+    /// 若不迁移，从旧包升级的用户会被当作全新安装，
+    /// 旧登录密码和数据加密密钥读不到，已加密数据将永久无法解密
+    private static let legacyService = "com.wq.ZeroNet-Space"
+
+    private var legacyMigratableAccounts: [String] {
+        [
+            passwordAccount, saltAccount, isSetAccount, dataPasswordAccount,
+            guestPasswordAccount, guestSaltAccount, isGuestSetAccount,
+            disguisePasswordAccount, isDisguiseSetAccount,
+        ]
+    }
+
+    /// 把旧 service 下的条目迁移到当前 service。
+    /// 逐项进行：写入新 service 成功后才删除旧项；任何一项失败（如
+    /// Keychain 暂不可写）都保留旧数据，等下次启动重试，绝不丢数据
+    fileprivate func migrateFromLegacyServiceIfNeeded() {
+        // 新 service 下已有主密码，说明用户已在新体系内，不做任何覆盖
+        if (try? readFromKeychain(account: isSetAccount)) != nil { return }
+
+        var migratedCount = 0
+        for account in legacyMigratableAccounts {
+            guard let legacyData = readLegacyItem(account: account) else { continue }
+
+            if (try? readFromKeychain(account: account)) == nil {
+                guard (try? saveToKeychain(account: account, data: legacyData)) != nil else {
+                    continue
+                }
+            }
+            deleteLegacyItem(account: account)
+            migratedCount += 1
+        }
+
+        if migratedCount > 0 {
+            print("✅ 已从旧 Keychain service 迁移 \(migratedCount) 项凭据")
+        }
+    }
+
+    private func readLegacyItem(account: String) -> Data? {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Self.legacyService,
+            kSecAttrAccount as String: account,
+            kSecReturnData as String: true,
+            kSecMatchLimit as String: kSecMatchLimitOne,
+        ]
+
+        var result: AnyObject?
+        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess else {
+            return nil
+        }
+        return result as? Data
+    }
+
+    private func deleteLegacyItem(account: String) {
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: Self.legacyService,
+            kSecAttrAccount as String: account,
+        ]
+        SecItemDelete(query as CFDictionary)
     }
 }
