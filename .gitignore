@@ -1,0 +1,22 @@
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+build/
+*.xcscmblueprint
+*.xccheckout
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# AI / tooling state
+.claude_memory/
+.omc/
+.claude/settings.local.json
