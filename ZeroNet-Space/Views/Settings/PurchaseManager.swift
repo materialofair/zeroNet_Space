@@ -11,9 +11,10 @@ import StoreKit
 
 /// 内购产品ID
 enum PurchaseProduct: String, CaseIterable {
-    // Keep this ID in sync with Products.storekit so StoreKit can return the stubbed item.
-    // ⚠️ 注意：必须与 App Store Connect 中的产品 ID 完全一致（包括连字符/下划线）
-    case unlimitedImport = "com.zeronetspace.unlimited-imports"
+    // ⚠️ 必须与 App Store Connect 中的产品 ID 完全一致（下划线，不是连字符），
+    // 并与 Products.storekit 保持同步。注意区分：Bundle ID / Keychain service
+    // 用的是连字符版 com.zeronetspace.unlimited-imports，二者不同属正常
+    case unlimitedImport = "com.zeronetspace.unlimited_imports"
 
     var displayName: String {
         switch self {
