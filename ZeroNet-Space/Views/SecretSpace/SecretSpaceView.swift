@@ -151,14 +151,24 @@ struct SecretSpaceView: View {
     private func delete(at offsets: IndexSet) {
         withAnimation {
             offsets.map { notes[$0] }.forEach(modelContext.delete)
-            try? modelContext.save()
+            saveOrRollback()
         }
     }
 
     private func delete(indices: IndexSet, from subset: [SecretNote]) {
         withAnimation {
             indices.map { subset[$0] }.forEach(modelContext.delete)
-            try? modelContext.save()
+            saveOrRollback()
+        }
+    }
+
+    /// 保存失败时回滚，保证 UI（@Query）与持久化状态一致
+    private func saveOrRollback() {
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.rollback()
+            print("❌ 保存笔记失败: \(error)")
         }
     }
 
@@ -232,7 +242,12 @@ private struct NoteRow: View {
         .swipeActions(edge: .leading, allowsFullSwipe: false) {
             Button {
                 note.isFavorite.toggle()
-                try? modelContext.save()
+                do {
+                    try modelContext.save()
+                } catch {
+                    modelContext.rollback()
+                    print("❌ 保存笔记失败: \(error)")
+                }
             } label: {
                 Label(
                     note.isFavorite
@@ -246,7 +261,12 @@ private struct NoteRow: View {
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(role: .destructive) {
                 modelContext.delete(note)
-                try? modelContext.save()
+                do {
+                    try modelContext.save()
+                } catch {
+                    modelContext.rollback()
+                    print("❌ 删除笔记失败: \(error)")
+                }
             } label: {
                 Label(String(localized: "common.delete"), systemImage: "trash")
             }

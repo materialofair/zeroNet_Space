@@ -13,17 +13,14 @@ struct PhotoDetailView: View {
     // MARK: - Properties
 
     let photo: MediaItem
-    let allPhotos: [MediaItem]
 
     @EnvironmentObject var authViewModel: AuthenticationViewModel
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
+    // 本地副本：删除成功后先从数组移除，避免 dismiss 动画期间渲染已删除的对象
+    @State private var photos: [MediaItem]
     @State private var currentIndex: Int
-    @State private var scale: CGFloat = 1.0
-    @State private var lastScale: CGFloat = 1.0
-    @State private var offset: CGSize = .zero
-    @State private var lastOffset: CGSize = .zero
     @State private var showControls = true
     @State private var showDeleteAlert = false
     @State private var isDeleting = false
@@ -37,7 +34,7 @@ struct PhotoDetailView: View {
 
     init(photo: MediaItem, allPhotos: [MediaItem]) {
         self.photo = photo
-        self.allPhotos = allPhotos
+        _photos = State(initialValue: allPhotos)
 
         // 找到当前图片的索引
         if let index = allPhotos.firstIndex(where: { $0.id == photo.id }) {
@@ -57,8 +54,8 @@ struct PhotoDetailView: View {
 
             // 图片浏览器
             TabView(selection: $currentIndex) {
-                ForEach(Array(allPhotos.enumerated()), id: \.element.id) { index, photo in
-                    ZoomableImageView(photo: photo, scale: $scale, offset: $offset)
+                ForEach(Array(photos.enumerated()), id: \.element.id) { index, photo in
+                    ZoomableImageView(photo: photo)
                         .environmentObject(authViewModel)
                         .tag(index)
                 }
@@ -75,12 +72,14 @@ struct PhotoDetailView: View {
             .animation(.easeInOut(duration: 0.2), value: showControls)
 
             // 底部信息栏
-            VStack {
-                Spacer()
-                bottomBar
+            if let current = currentPhoto {
+                VStack {
+                    Spacer()
+                    bottomBar(for: current)
+                }
+                .opacity(showControls ? 1 : 0)
+                .animation(.easeInOut(duration: 0.2), value: showControls)
             }
-            .opacity(showControls ? 1 : 0)
-            .animation(.easeInOut(duration: 0.2), value: showControls)
         }
         .statusBar(hidden: !showControls)
         .onTapGesture {
@@ -178,11 +177,11 @@ struct PhotoDetailView: View {
 
     // MARK: - Bottom Bar
 
-    private var bottomBar: some View {
+    private func bottomBar(for photo: MediaItem) -> some View {
         VStack(spacing: 12) {
             // 文件信息
             VStack(spacing: 4) {
-                Text(currentPhoto.fileName)
+                Text(photo.fileName)
                     .font(.headline)
                     .foregroundColor(.white)
                     .lineLimit(1)
@@ -190,13 +189,13 @@ struct PhotoDetailView: View {
                 HStack(spacing: 16) {
                     // 文件大小
                     Label(
-                        formatFileSize(currentPhoto.fileSize),
+                        formatFileSize(photo.fileSize),
                         systemImage: "doc"
                     )
 
                     // 创建日期
                     Label(
-                        formatDate(currentPhoto.createdAt),
+                        formatDate(photo.createdAt),
                         systemImage: "calendar"
                     )
                 }
@@ -205,8 +204,8 @@ struct PhotoDetailView: View {
             }
 
             // 页码指示器
-            if allPhotos.count > 1 {
-                Text("\(currentIndex + 1) / \(allPhotos.count)")
+            if photos.count > 1 {
+                Text("\(currentIndex + 1) / \(photos.count)")
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.6))
                     .padding(.top, 4)
@@ -225,18 +224,18 @@ struct PhotoDetailView: View {
 
     // MARK: - Computed Properties
 
-    private var currentPhoto: MediaItem {
-        guard !allPhotos.isEmpty, currentIndex < allPhotos.count else {
-            // 如果数组为空或索引超出范围，返回原始photo
-            return photo
+    private var currentPhoto: MediaItem? {
+        guard photos.indices.contains(currentIndex) else {
+            return photos.first
         }
-        return allPhotos[currentIndex]
+        return photos[currentIndex]
     }
 
     // MARK: - Methods
 
     private func sharePhoto() {
         guard !isExporting else { return }
+        guard let item = currentPhoto else { return }
 
         guard let password = authViewModel.sessionPassword, !password.isEmpty else {
             exportError = String(localized: "photo.error.noPassword")
@@ -245,7 +244,6 @@ struct PhotoDetailView: View {
         }
 
         isExporting = true
-        let item = currentPhoto
 
         ExportService.shared.exportItems([item], password: password) { result in
             switch result {
@@ -262,37 +260,43 @@ struct PhotoDetailView: View {
     }
 
     private func deletePhoto() async {
+        guard let photoToDelete = currentPhoto else { return }
         isDeleting = true
 
-        let photoToDelete = currentPhoto
+        let encryptedPath = photoToDelete.encryptedPath
 
-        // 立即关闭详情页，避免访问已删除的数据导致崩溃
-        dismiss()
-
-        // 短暂延迟等待dismiss完成
-        try? await Task.sleep(nanoseconds: 100_000_000)
-
-        // 1. 删除加密文件
+        // 先提交数据库删除，成功后再关页面、删文件；
+        // 失败时留在页面上提示，而不是无声地 dismiss
+        modelContext.delete(photoToDelete)
         do {
-            try FileStorageService.shared.deleteFile(path: photoToDelete.encryptedPath)
-            print("🗑️ 已删除文件: \(photoToDelete.fileName)")
+            try modelContext.save()
         } catch {
-            print("❌ 删除文件失败: \(error)")
-        }
-
-        // 2. 从数据库删除记录
-        await MainActor.run {
-            modelContext.delete(photoToDelete)
-
-            do {
-                try modelContext.save()
-                print("✅ 已从数据库删除: \(photoToDelete.fileName)")
-            } catch {
-                print("❌ 数据库删除失败: \(error)")
-            }
-
+            modelContext.rollback()
             isDeleting = false
+            exportError = String(
+                format: String(localized: "gallery.error.deleteFailed"),
+                error.localizedDescription)
+            showExportError = true
+            return
         }
+
+        // 从本地数组移除，避免 dismiss 动画期间渲染已删除的对象
+        if let index = photos.firstIndex(where: { $0.id == photoToDelete.id }) {
+            photos.remove(at: index)
+            if currentIndex >= photos.count {
+                currentIndex = max(photos.count - 1, 0)
+            }
+        }
+
+        do {
+            try FileStorageService.shared.deleteFile(path: encryptedPath)
+        } catch {
+            // 记录已删除，文件删除失败只会残留无引用的加密文件
+            print("⚠️ 加密文件删除失败: \(error)")
+        }
+
+        isDeleting = false
+        dismiss()
     }
 
     private func formatFileSize(_ bytes: Int64) -> String {
@@ -313,13 +317,14 @@ struct PhotoDetailView: View {
 
 struct ZoomableImageView: View {
     let photo: MediaItem
-    @Binding var scale: CGFloat
-    @Binding var offset: CGSize
 
     @EnvironmentObject var authViewModel: AuthenticationViewModel
     @State private var loadedImage: UIImage?
     @State private var isLoading = false
     @State private var loadError: String?
+    // 缩放/平移状态归每页私有，避免翻页时把上一张的缩放带到下一张
+    @State private var scale: CGFloat = 1.0
+    @State private var offset: CGSize = .zero
     @State private var lastScale: CGFloat = 1.0
     @State private var lastOffset: CGSize = .zero
 

@@ -560,12 +560,17 @@ struct MediaDetailView: View {
                     try await Task.sleep(nanoseconds: 100_000_000)  // 0.1秒
                 }
 
-                // 删除加密文件
-                try storageService.deleteFile(path: mediaItem.encryptedPath)
-
-                // 从数据库删除
+                // 先提交数据库删除，成功后再删文件，
+                // 避免 save 失败时留下指向已删除文件的记录
+                let encryptedPath = mediaItem.encryptedPath
                 modelContext.delete(mediaItem)
-                try? modelContext.save()
+                try modelContext.save()
+
+                do {
+                    try storageService.deleteFile(path: encryptedPath)
+                } catch {
+                    print("⚠️ 加密文件删除失败: \(error)")
+                }
 
                 // 返回上一页
                 await MainActor.run {
@@ -576,6 +581,7 @@ struct MediaDetailView: View {
 
             } catch {
                 await MainActor.run {
+                    modelContext.rollback()
                     errorMessage = "删除失败: \(error.localizedDescription)"
                 }
                 print("❌ 删除失败: \(error)")

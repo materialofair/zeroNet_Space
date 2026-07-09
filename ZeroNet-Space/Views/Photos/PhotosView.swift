@@ -33,6 +33,8 @@ struct PhotosView: View {
     @State private var showImportView = false
     @State private var showExportView = false
     @State private var selectedPhoto: MediaItem?
+    @State private var photoToDelete: MediaItem?
+    @State private var deleteErrorMessage: String?
 
     // MARK: - Constants
 
@@ -96,6 +98,32 @@ struct PhotosView: View {
             .fullScreenCover(item: $selectedPhoto) { photo in
                 PhotoDetailView(photo: photo, allPhotos: photos)
                     .environmentObject(authViewModel)
+            }
+            .alert(
+                String(localized: "photo.delete.confirmTitle"),
+                isPresented: Binding(
+                    get: { photoToDelete != nil },
+                    set: { if !$0 { photoToDelete = nil } }
+                ),
+                presenting: photoToDelete
+            ) { photo in
+                Button(String(localized: "common.delete"), role: .destructive) {
+                    deletePhoto(photo)
+                }
+                Button(String(localized: "common.cancel"), role: .cancel) {}
+            } message: { _ in
+                Text(String(localized: "photo.delete.confirmMessage"))
+            }
+            .alert(
+                String(localized: "common.error"),
+                isPresented: Binding(
+                    get: { deleteErrorMessage != nil },
+                    set: { if !$0 { deleteErrorMessage = nil } }
+                )
+            ) {
+                Button(String(localized: "common.ok"), role: .cancel) {}
+            } message: {
+                Text(deleteErrorMessage ?? "")
             }
             .task {
                 cleanupInvalidPhotos()
@@ -199,7 +227,7 @@ struct PhotosView: View {
                         }
                         .contextMenu {
                             Button(role: .destructive) {
-                                deletePhoto(photo)
+                                photoToDelete = photo
                             } label: {
                                 Label(String(localized: "common.delete"), systemImage: "trash")
                             }
@@ -212,8 +240,27 @@ struct PhotosView: View {
     // MARK: - Methods
 
     private func deletePhoto(_ photo: MediaItem) {
-        // TODO: 实现删除逻辑
+        let encryptedPath = photo.encryptedPath
+
+        // 先提交数据库删除，成功后再删文件，
+        // 避免 save 失败时留下指向已删除文件的记录
         modelContext.delete(photo)
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.rollback()
+            deleteErrorMessage = String(
+                format: String(localized: "gallery.error.deleteFailed"),
+                error.localizedDescription)
+            return
+        }
+
+        do {
+            try FileStorageService.shared.deleteFile(path: encryptedPath)
+        } catch {
+            // 记录已删除，文件删除失败只会残留无引用的加密文件
+            print("⚠️ 加密文件删除失败: \(error)")
+        }
     }
 }
 

@@ -32,6 +32,8 @@ struct FilesView: View {
     @State private var showImportView = false
     @State private var selectedFile: MediaItem?
     @State private var searchText = ""
+    @State private var fileToDelete: MediaItem?
+    @State private var deleteErrorMessage: String?
 
     // MARK: - Body
 
@@ -74,6 +76,32 @@ struct FilesView: View {
                 }
                 .environment(\.modelContext, modelContext)
                 .environmentObject(authViewModel)
+            }
+            .alert(
+                String(localized: "media.delete.title"),
+                isPresented: Binding(
+                    get: { fileToDelete != nil },
+                    set: { if !$0 { fileToDelete = nil } }
+                ),
+                presenting: fileToDelete
+            ) { file in
+                Button(String(localized: "common.delete"), role: .destructive) {
+                    deleteFile(file)
+                }
+                Button(String(localized: "common.cancel"), role: .cancel) {}
+            } message: { _ in
+                Text(String(localized: "media.delete.confirmation"))
+            }
+            .alert(
+                String(localized: "common.error"),
+                isPresented: Binding(
+                    get: { deleteErrorMessage != nil },
+                    set: { if !$0 { deleteErrorMessage = nil } }
+                )
+            ) {
+                Button(String(localized: "common.ok"), role: .cancel) {}
+            } message: {
+                Text(deleteErrorMessage ?? "")
             }
             .task {
                 cleanupInvalidFiles()
@@ -176,7 +204,7 @@ struct FilesView: View {
                     }
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button(role: .destructive) {
-                            deleteFile(file)
+                            fileToDelete = file
                         } label: {
                             Label(String(localized: "common.delete"), systemImage: "trash")
                         }
@@ -200,7 +228,27 @@ struct FilesView: View {
     // MARK: - Methods
 
     private func deleteFile(_ file: MediaItem) {
+        let encryptedPath = file.encryptedPath
+
+        // 先提交数据库删除，成功后再删文件，
+        // 避免 save 失败时留下指向已删除文件的记录
         modelContext.delete(file)
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.rollback()
+            deleteErrorMessage = String(
+                format: String(localized: "gallery.error.deleteFailed"),
+                error.localizedDescription)
+            return
+        }
+
+        do {
+            try FileStorageService.shared.deleteFile(path: encryptedPath)
+        } catch {
+            // 记录已删除，文件删除失败只会残留无引用的加密文件
+            print("⚠️ 加密文件删除失败: \(error)")
+        }
     }
 }
 

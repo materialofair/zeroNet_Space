@@ -237,7 +237,7 @@ class ImportViewModel: ObservableObject {
                 modelContext?.insert(item)
             }
 
-            try? modelContext?.save()
+            try modelContext?.save()
 
             importedCount = items.count
             importProgress = nil
@@ -251,6 +251,8 @@ class ImportViewModel: ObservableObject {
             importProgress = nil
             isImporting = false
         } catch {
+            // 回滚未提交的插入，避免残留变更被后续 save 意外持久化
+            modelContext?.rollback()
             errorMessage = String(
                 format: String(localized: "import.error.failedWithReason"),
                 error.localizedDescription)
@@ -308,21 +310,25 @@ extension ImportViewModel {
 
     /// 使用原始密码导入加密文件并用新密码重新加密
     private func importEncryptedFileWithPassword(url: URL, originalPassword: String) {
-        guard url.startAccessingSecurityScopedResource() else {
-            errorMessage = String(localized: "import.error.accessDenied")
-            showEncryptedPasswordInput = false
-            isImporting = false
-            return
-        }
-        defer {
-            url.stopAccessingSecurityScopedResource()
-        }
-
         isImporting = true
         errorMessage = nil
 
         currentImportTask = Task { [weak self] in
             guard let self else { return }
+
+            // 安全作用域访问必须覆盖真正读取文件的异步过程；
+            // 若放在外层同步函数中，defer 会在 Task 执行前就释放访问权限
+            guard url.startAccessingSecurityScopedResource() else {
+                await MainActor.run {
+                    self.errorMessage = String(localized: "import.error.accessDenied")
+                    self.showEncryptedPasswordInput = false
+                    self.isImporting = false
+                }
+                return
+            }
+            defer {
+                url.stopAccessingSecurityScopedResource()
+            }
 
             do {
                 // 获取当前会话密码（用于重新加密）
@@ -346,7 +352,14 @@ extension ImportViewModel {
                     for item in items {
                         self.modelContext?.insert(item)
                     }
-                    try? self.modelContext?.save()
+                    do {
+                        try self.modelContext?.save()
+                    } catch {
+                        self.modelContext?.rollback()
+                        self.errorMessage = String(
+                            format: String(localized: "import.error.failedWithReason"),
+                            error.localizedDescription)
+                    }
 
                     self.importedCount = items.count
                     self.isImporting = false

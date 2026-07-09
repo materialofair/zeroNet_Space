@@ -54,7 +54,7 @@ struct MainTabView: View {
                 .tabItem {
                     Label(
                         String(localized: "tab.secretSpace"),
-                        systemImage: selectedTab == 3 ? "note.text" : "note.text")
+                        systemImage: selectedTab == 3 ? "note.text" : "note")
                 }
                 .tag(3)
 

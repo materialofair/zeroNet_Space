@@ -32,6 +32,8 @@ struct VideosView: View {
     @EnvironmentObject private var guestModeManager: GuestModeManager
     @State private var showImportView = false
     @State private var selectedVideo: MediaItem?
+    @State private var videoToDelete: MediaItem?
+    @State private var deleteErrorMessage: String?
 
     // MARK: - Body
 
@@ -69,6 +71,32 @@ struct VideosView: View {
             }
             .fullScreenCover(item: $selectedVideo) { video in
                 VideoPlayerView(video: video)
+            }
+            .alert(
+                String(localized: "video.delete.confirmTitle"),
+                isPresented: Binding(
+                    get: { videoToDelete != nil },
+                    set: { if !$0 { videoToDelete = nil } }
+                ),
+                presenting: videoToDelete
+            ) { video in
+                Button(String(localized: "common.delete"), role: .destructive) {
+                    deleteVideo(video)
+                }
+                Button(String(localized: "common.cancel"), role: .cancel) {}
+            } message: { _ in
+                Text(String(localized: "video.delete.confirmMessage"))
+            }
+            .alert(
+                String(localized: "common.error"),
+                isPresented: Binding(
+                    get: { deleteErrorMessage != nil },
+                    set: { if !$0 { deleteErrorMessage = nil } }
+                )
+            ) {
+                Button(String(localized: "common.ok"), role: .cancel) {}
+            } message: {
+                Text(deleteErrorMessage ?? "")
             }
             .task {
                 cleanupInvalidVideos()
@@ -174,7 +202,7 @@ struct VideosView: View {
                         }
                         .contextMenu {
                             Button(role: .destructive) {
-                                deleteVideo(video)
+                                videoToDelete = video
                             } label: {
                                 Label(String(localized: "common.delete"), systemImage: "trash")
                             }
@@ -188,27 +216,26 @@ struct VideosView: View {
     // MARK: - Methods
 
     private func deleteVideo(_ video: MediaItem) {
-        let storage = FileStorageService.shared
+        let encryptedPath = video.encryptedPath
 
-        Task { @MainActor in
-            print("🗑️ 准备删除视频: \(video.fullFileName)")
+        // 先提交数据库删除，成功后再删文件，
+        // 避免 save 失败时留下指向已删除文件的记录
+        modelContext.delete(video)
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.rollback()
+            deleteErrorMessage = String(
+                format: String(localized: "gallery.error.deleteFailed"),
+                error.localizedDescription)
+            return
+        }
 
-            // 先删除加密文件
-            do {
-                try storage.deleteFile(path: video.encryptedPath)
-            } catch {
-                print("❌ 删除视频文件失败: \(error)")
-            }
-
-            // 再删除数据库记录
-            modelContext.delete(video)
-
-            do {
-                try modelContext.save()
-                print("🗑️ 视频已删除并保存: \(video.fullFileName)")
-            } catch {
-                print("❌ 删除视频记录保存失败: \(error)")
-            }
+        do {
+            try FileStorageService.shared.deleteFile(path: encryptedPath)
+        } catch {
+            // 记录已删除，文件删除失败只会残留无引用的加密文件
+            print("⚠️ 加密文件删除失败: \(error)")
         }
     }
 }

@@ -96,17 +96,26 @@ class GalleryViewModel: ObservableObject {
         guard let item = mediaItemToDelete else { return }
 
         Task {
+            let encryptedPath = item.encryptedPath
+            let fileName = item.fileName
+
             do {
-                // 删除加密文件
-                try storageService.deleteFile(path: item.encryptedPath)
-
-                // 从SwiftData删除
+                // 先提交数据库删除，成功后再删文件，
+                // 避免 save 失败时留下指向已删除文件的记录
                 modelContext?.delete(item)
-                try? modelContext?.save()
+                try modelContext?.save()
 
-                print("🗑️ 媒体项已删除: \(item.fileName)")
+                do {
+                    try storageService.deleteFile(path: encryptedPath)
+                } catch {
+                    // 记录已删除，文件删除失败只会残留无引用的加密文件
+                    print("⚠️ 加密文件删除失败: \(fileName) - \(error)")
+                }
+
+                print("🗑️ 媒体项已删除: \(fileName)")
 
             } catch {
+                modelContext?.rollback()
                 errorMessage = String(
                     format: String(localized: "gallery.error.deleteFailed"),
                     error.localizedDescription)
@@ -148,19 +157,33 @@ class GalleryViewModel: ObservableObject {
     /// 批量删除
     func deleteMultipleItems(_ items: [MediaItem]) {
         Task {
-            var successCount = 0
-
+            // 先提交数据库删除，成功后再删文件，
+            // 避免 save 失败时留下指向已删除文件的记录
+            let encryptedPaths = items.map { $0.encryptedPath }
             for item in items {
-                do {
-                    try storageService.deleteFile(path: item.encryptedPath)
-                    modelContext?.delete(item)
-                    successCount += 1
-                } catch {
-                    print("❌ 删除失败: \(item.fileName) - \(error)")
-                }
+                modelContext?.delete(item)
             }
 
-            try? modelContext?.save()
+            do {
+                try modelContext?.save()
+            } catch {
+                modelContext?.rollback()
+                errorMessage = String(
+                    format: String(localized: "gallery.error.deleteFailed"),
+                    error.localizedDescription)
+                print("❌ 批量删除失败: \(error)")
+                return
+            }
+
+            var successCount = 0
+            for path in encryptedPaths {
+                do {
+                    try storageService.deleteFile(path: path)
+                    successCount += 1
+                } catch {
+                    print("⚠️ 加密文件删除失败: \(path) - \(error)")
+                }
+            }
 
             print("🗑️ 批量删除完成: \(successCount)/\(items.count)")
         }
