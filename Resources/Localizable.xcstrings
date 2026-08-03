@@ -804,7 +804,21 @@
       }
     },
     "common.retry" : {
-
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重试"
+          }
+        }
+      }
     },
     "common.save" : {
       "extractionState" : "manual",
@@ -7926,6 +7940,23 @@
         }
       }
     },
+    "photo.gestureHint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Swipe to switch · Double-tap to zoom · Tap to hide controls"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "左右滑动切换 · 双击缩放 · 点击隐藏控制栏"
+          }
+        }
+      }
+    },
     "photo.deleting" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7956,6 +7987,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "当前会话无有效密码，请重新登录后再试。"
+          }
+        }
+      }
+    },
+    "photos.delete.multipleMessage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete the %d selected photos? This action cannot be undone."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确定删除选中的 %d 张相片吗？此操作无法撤销。"
           }
         }
       }
@@ -8007,6 +8055,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "导出"
+          }
+        }
+      }
+    },
+    "photos.search.noResults" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No matching photos"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有找到匹配的相片"
           }
         }
       }

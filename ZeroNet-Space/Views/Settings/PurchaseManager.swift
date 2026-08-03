@@ -149,6 +149,12 @@ class PurchaseManager: ObservableObject {
         // 🔴 延迟初始化：仅在用户主动购买时才初始化 StoreKit
         initializeStoreKitIfNeeded()
 
+        // 如果产品尚未加载（例如从未打开过设置页），先加载再购买，
+        // 否则 purchase() 会因找不到产品而直接失败
+        if products.isEmpty {
+            await loadProducts()
+        }
+
         print("🛒 [IAP Debug] 开始购买流程")
         print("   当前已加载产品数量: \(products.count)")
         print("   已加载的产品 IDs: \(products.map { $0.id })")
@@ -312,6 +318,14 @@ class PurchaseManager: ObservableObject {
         }
 
         hasUnlockedUnlimited = unlocked
+
+        // 将解锁状态同步到持久化的 AppSettings（导入限制读取的来源），
+        // 避免出现"已购买但导入限制仍然生效"的分裂状态；
+        // 演示模式下 AppSettings 已在初始化时解锁，无需覆盖
+        if !AppConstants.isDemoModeEnabled {
+            AppSettings.shared.hasUnlockedUnlimited = unlocked
+        }
+
         print("📊 购买状态更新: \(unlocked ? "已解锁" : "未解锁")")
     }
 

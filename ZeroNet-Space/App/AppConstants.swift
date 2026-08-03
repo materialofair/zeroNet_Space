@@ -17,11 +17,11 @@ enum AppConstants {
 
     /// 应用版本（从 Info.plist 读取，跟随 MARKETING_VERSION，避免手写过期）
     static let appVersion =
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.1.0"
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.2.0"
 
     /// 构建号（跟随 CURRENT_PROJECT_VERSION）
     static let buildNumber =
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "6"
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "9"
 
     /// Bundle Identifier
     static let bundleIdentifier = "com.zeronetspace.unlimited-imports"

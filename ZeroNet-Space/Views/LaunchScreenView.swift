@@ -9,19 +9,12 @@
 import SwiftUI
 
 struct LaunchScreenView: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
-                // 渐变背景 - 与启动图片完美融合的紫蓝渐变
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(red: 0.85, green: 0.82, blue: 0.92),  // 淡紫色 #D9D1EB
-                        Color(red: 0.70, green: 0.75, blue: 0.90),  // 蓝紫色 #B3BFE6
-                        Color(red: 0.45, green: 0.60, blue: 0.85),  // 深蓝色 #7399D9
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
+                backgroundGradient
                 .ignoresSafeArea()
 
                 // 启动图片 - 使用 .scaledToFit() 确保完整显示不裁剪
@@ -36,6 +29,20 @@ struct LaunchScreenView: View {
             }
         }
         .ignoresSafeArea()
+    }
+
+    private var backgroundGradient: LinearGradient {
+        let colors: [Color] = colorScheme == .dark
+            ? [
+                Color(red: 0.03, green: 0.08, blue: 0.20),
+                Color(red: 0.02, green: 0.05, blue: 0.14),
+            ]
+            : [
+                Color(red: 0.98, green: 0.97, blue: 0.95),
+                Color(red: 0.95, green: 0.96, blue: 0.99),
+            ]
+
+        return LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom)
     }
 }
 

@@ -72,7 +72,8 @@ struct FilesView: View {
             }
             .sheet(item: $selectedFile) { file in
                 NavigationStack {
-                    MediaDetailView(mediaItem: file)
+                    // 翻页容器：在多个文件之间左右滑动切换预览
+                    FilePagerView(files: filteredFiles, initialFile: file)
                 }
                 .environment(\.modelContext, modelContext)
                 .environmentObject(authViewModel)
@@ -353,6 +354,36 @@ struct FileRowView: View {
         let formatter = DateFormatter()
         formatter.dateStyle = .short
         return formatter.string(from: date)
+    }
+}
+
+// MARK: - File Pager View
+
+/// 文件预览翻页容器：在多个文件之间左右滑动切换
+struct FilePagerView: View {
+    @EnvironmentObject private var authViewModel: AuthenticationViewModel
+
+    private let files: [MediaItem]
+    @State private var currentIndex: Int
+
+    init(files: [MediaItem], initialFile: MediaItem) {
+        self.files = files
+        if let index = files.firstIndex(where: { $0.id == initialFile.id }) {
+            _currentIndex = State(initialValue: index)
+        } else {
+            _currentIndex = State(initialValue: 0)
+        }
+    }
+
+    var body: some View {
+        TabView(selection: $currentIndex) {
+            ForEach(Array(files.enumerated()), id: \.element.id) { index, file in
+                MediaDetailView(mediaItem: file)
+                    .environmentObject(authViewModel)
+                    .tag(index)
+            }
+        }
+        .tabViewStyle(.page(indexDisplayMode: .never))
     }
 }
 

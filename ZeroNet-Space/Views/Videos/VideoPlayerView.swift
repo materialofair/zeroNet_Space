@@ -6,7 +6,7 @@
 //  支持全屏播放、控制条、手势操作
 //
 
-import AVKit
+import AVFoundation
 import SwiftUI
 
 struct VideoPlayerView: View {
@@ -37,6 +37,8 @@ struct VideoPlayerView: View {
     @State private var showShareSheet = false
     @State private var shareError: String?
     @State private var showShareAlert = false
+    @State private var showDeleteErrorAlert = false
+    @State private var deleteErrorMessage: String?
 
     // MARK: - Body
 
@@ -45,9 +47,10 @@ struct VideoPlayerView: View {
             Color.black
                 .ignoresSafeArea()
 
-            // 视频播放器
+            // 视频播放器（自绘控制条；用无控件的容器替代 AVKit VideoPlayer，
+            // 避免系统原生控制条与自绘顶/底控制栏重叠）
             if let player = player {
-                VideoPlayer(player: player)
+                PlayerContainerView(player: player)
                     .ignoresSafeArea()
                     .onAppear {
                         // 视图出现后再开始播放，避免只出声音没有画面
@@ -81,6 +84,19 @@ struct VideoPlayerView: View {
                         .foregroundColor(.white.opacity(0.8))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
+
+                    // 重试按钮
+                    Button {
+                        retryLoad()
+                    } label: {
+                        Label(String(localized: "common.retry"), systemImage: "arrow.clockwise")
+                            .font(.headline)
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 10)
+                            .background(Color.white.opacity(0.2))
+                            .foregroundColor(.white)
+                            .cornerRadius(10)
+                    }
                 }
             } else {
                 // 加载中
@@ -133,6 +149,11 @@ struct VideoPlayerView: View {
             Button(String(localized: "common.ok"), role: .cancel) {}
         } message: {
             Text(shareError ?? String(localized: "common.unknownError"))
+        }
+        .alert(String(localized: "common.error"), isPresented: $showDeleteErrorAlert) {
+            Button(String(localized: "common.ok"), role: .cancel) {}
+        } message: {
+            Text(deleteErrorMessage ?? String(localized: "common.unknownError"))
         }
         .loadingOverlay(
             isShowing: isDecrypting || isSharing,
@@ -462,6 +483,21 @@ struct VideoPlayerView: View {
 
     private func deleteVideo() {
         let storage = FileStorageService.shared
+        let encryptedPath = video.encryptedPath
+
+        // 先提交数据库删除，成功后再停播放器/删文件（与列表页保持一致），
+        // 避免 save 失败时留下指向已删除文件的记录，也让播放器保持可用
+        modelContext.delete(video)
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.rollback()
+            deleteErrorMessage = String(
+                format: String(localized: "gallery.error.deleteFailed"),
+                error.localizedDescription)
+            showDeleteErrorAlert = true
+            return
+        }
 
         // 停止播放并清理观察者
         if let player = player, let observer = timeObserver {
@@ -472,23 +508,24 @@ struct VideoPlayerView: View {
 
         // 删除加密文件
         do {
-            try storage.deleteFile(path: video.encryptedPath)
+            try storage.deleteFile(path: encryptedPath)
         } catch {
-            print("❌ 删除视频文件失败: \(error)")
-        }
-
-        // 删除 SwiftData 记录
-        modelContext.delete(video)
-        do {
-            try modelContext.save()
-            print("🗑️ 视频已删除并保存: \(video.fullFileName)")
-        } catch {
-            print("❌ 删除视频记录保存失败: \(error)")
+            // 记录已删除，文件删除失败只会残留无引用的加密文件
+            print("⚠️ 加密视频文件删除失败: \(error)")
         }
 
         // 清理临时文件并退出播放器
         cleanupTempFile()
         dismiss()
+    }
+
+    /// 重新尝试加载视频（解密失败时使用）
+    private func retryLoad() {
+        cleanupTempFile()
+        errorMessage = nil
+        player = nil
+        timeObserver = nil
+        setupPlayer()
     }
 
     private func formatTime(_ seconds: Double) -> String {
@@ -497,6 +534,38 @@ struct VideoPlayerView: View {
         let minutes = totalSeconds / 60
         let secs = totalSeconds % 60
         return String(format: "%02d:%02d", minutes, secs)
+    }
+}
+
+// MARK: - Player Container View
+
+/// 仅承载 AVPlayer 画面、不带任何系统控制条的无控件播放视图
+struct PlayerContainerView: UIViewRepresentable {
+    let player: AVPlayer
+
+    func makeUIView(context: Context) -> PlayerUIView {
+        let view = PlayerUIView()
+        view.player = player
+        return view
+    }
+
+    func updateUIView(_ uiView: PlayerUIView, context: Context) {
+        uiView.player = player
+    }
+}
+
+final class PlayerUIView: UIView {
+    override static var layerClass: AnyClass {
+        AVPlayerLayer.self
+    }
+
+    private var playerLayer: AVPlayerLayer {
+        layer as! AVPlayerLayer
+    }
+
+    var player: AVPlayer? {
+        get { playerLayer.player }
+        set { playerLayer.player = newValue }
     }
 }
 

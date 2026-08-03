@@ -210,6 +210,12 @@ struct PhotoDetailView: View {
                     .foregroundColor(.white.opacity(0.6))
                     .padding(.top, 4)
             }
+
+            // 手势提示
+            Text(String(localized: "photo.gestureHint"))
+                .font(.caption2)
+                .foregroundColor(.white.opacity(0.45))
+                .padding(.top, 2)
         }
         .padding()
         .background(
@@ -353,6 +359,23 @@ struct ZoomableImageView: View {
                         Text(error)
                             .font(.caption)
                             .foregroundColor(.gray)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+
+                        // 重试按钮
+                        Button {
+                            Task { await loadImage() }
+                        } label: {
+                            Label(
+                                String(localized: "common.retry"),
+                                systemImage: "arrow.clockwise")
+                                .font(.headline)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 10)
+                                .background(Color.white.opacity(0.2))
+                                .foregroundColor(.white)
+                                .cornerRadius(10)
+                        }
                     }
                 } else {
                     // 初始占位
@@ -386,23 +409,34 @@ struct ZoomableImageView: View {
                             withAnimation(.spring()) {
                                 scale = 1.0
                                 offset = .zero
+                                lastOffset = .zero
                             }
+                        } else {
+                            // 缩放结束后把偏移收敛到放大图像的边界内
+                            offset = clampedOffset(offset, containerSize: geometry.size)
+                            lastOffset = offset
                         }
                     }
             )
+            // 平移手势只在放大(scale > 1)时挂载；
+            // 未放大时不挂载，把左右滑动让给外层 TabView 完成翻页，
+            // 否则 DragGesture 会抢占页面切换手势导致无法左右滑动
             .simultaneousGesture(
-                DragGesture()
-                    .onChanged { value in
-                        if scale > 1.0 {
-                            offset = CGSize(
-                                width: lastOffset.width + value.translation.width,
-                                height: lastOffset.height + value.translation.height
-                            )
-                        }
-                    }
-                    .onEnded { _ in
-                        lastOffset = offset
-                    }
+                scale > 1.0
+                    ? AnyGesture(
+                        DragGesture()
+                            .onChanged { value in
+                                let proposed = CGSize(
+                                    width: lastOffset.width + value.translation.width,
+                                    height: lastOffset.height + value.translation.height
+                                )
+                                offset = clampedOffset(proposed, containerSize: geometry.size)
+                            }
+                            .onEnded { _ in
+                                lastOffset = offset
+                            }
+                    )
+                    : nil
             )
             .onTapGesture(count: 2) {
                 // 双击缩放
@@ -420,6 +454,37 @@ struct ZoomableImageView: View {
                 await loadImage()
             }
         }
+    }
+
+    /// 将平移偏移限制在放大图像的边界内，避免图片被拖出屏幕
+    private func clampedOffset(_ proposed: CGSize, containerSize: CGSize) -> CGSize {
+        guard scale > 1.0, let image = loadedImage else {
+            return .zero
+        }
+
+        // 图片按 aspectFit 显示在容器内，先算出未缩放的显示尺寸
+        let imageAspect = image.size.width / image.size.height
+        let containerAspect = containerSize.width / containerSize.height
+        let displayedSize: CGSize
+        if imageAspect >= containerAspect {
+            displayedSize = CGSize(
+                width: containerSize.width,
+                height: containerSize.width / imageAspect)
+        } else {
+            displayedSize = CGSize(
+                width: containerSize.height * imageAspect,
+                height: containerSize.height)
+        }
+
+        // 缩放后超出容器的部分就是允许平移的范围
+        let scaledWidth = displayedSize.width * scale
+        let scaledHeight = displayedSize.height * scale
+        let maxX = max(0, (scaledWidth - containerSize.width) / 2)
+        let maxY = max(0, (scaledHeight - containerSize.height) / 2)
+
+        return CGSize(
+            width: min(max(proposed.width, -maxX), maxX),
+            height: min(max(proposed.height, -maxY), maxY))
     }
 
     private func loadImage() async {

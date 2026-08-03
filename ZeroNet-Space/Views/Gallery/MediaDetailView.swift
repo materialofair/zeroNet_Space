@@ -148,6 +148,19 @@ struct MediaDetailView: View {
                 .foregroundColor(.white.opacity(0.8))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
+
+            // 重试按钮
+            Button {
+                retryLoad()
+            } label: {
+                Label(String(localized: "common.retry"), systemImage: "arrow.clockwise")
+                    .font(.headline)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 10)
+                    .background(Color.white.opacity(0.2))
+                    .foregroundColor(.white)
+                    .cornerRadius(10)
+            }
         }
     }
 
@@ -417,6 +430,16 @@ struct MediaDetailView: View {
     }
 
     // MARK: - Private Methods
+
+    /// 重新尝试加载并解密媒体（加载失败时使用）
+    private func retryLoad() {
+        isLoading = true
+        errorMessage = nil
+        decryptedData = nil
+        Task {
+            await loadAndDecryptMedia()
+        }
+    }
 
     /// 加载并解密媒体
     private func loadAndDecryptMedia() async {

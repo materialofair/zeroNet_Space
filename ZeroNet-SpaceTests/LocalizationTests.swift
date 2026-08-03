@@ -3,6 +3,7 @@
 //  ZeroNet-SpaceTests
 //
 //  Created by Claude on 2025-11-16.
+//  Updated: test keys reflect current UI (login/password setup/tab renames)
 //
 
 import XCTest
@@ -28,37 +29,40 @@ class LocalizationTests: XCTestCase {
         XCTAssertNotEqual(
             String(localized: "login.title"), "login.title", "Login title should be localized")
         XCTAssertNotEqual(
-            String(localized: "login.email"), "login.email", "Email field should be localized")
+            String(localized: "login.subtitle"), "login.subtitle",
+            "Login subtitle should be localized")
         XCTAssertNotEqual(
-            String(localized: "login.password"), "login.password",
+            String(localized: "login.passwordPlaceholder"), "login.passwordPlaceholder",
             "Password field should be localized")
         XCTAssertNotEqual(
-            String(localized: "login.button"), "login.button", "Login button should be localized")
+            String(localized: "login.unlock"), "login.unlock", "Login button should be localized")
     }
 
-    func testRegisterViewStrings() throws {
+    func testSetupPasswordViewStrings() throws {
         XCTAssertNotEqual(
-            String(localized: "register.title"), "register.title",
-            "Register title should be localized")
+            String(localized: "setup.header.title"), "setup.header.title",
+            "Setup title should be localized")
         XCTAssertNotEqual(
-            String(localized: "register.confirmPassword"), "register.confirmPassword",
+            String(localized: "setup.confirmPasswordPlaceholder"),
+            "setup.confirmPasswordPlaceholder",
             "Confirm password should be localized")
         XCTAssertNotEqual(
-            String(localized: "register.button"), "register.button",
-            "Register button should be localized")
+            String(localized: "setup.finish"), "setup.finish",
+            "Finish setup button should be localized")
     }
 
     // MARK: - Tab Bar Strings
 
     func testTabBarStrings() throws {
         XCTAssertNotEqual(
-            String(localized: "tab.gallery"), "tab.gallery", "Gallery tab should be localized")
+            String(localized: "tab.photos"), "tab.photos", "Photos tab should be localized")
         XCTAssertNotEqual(
             String(localized: "tab.videos"), "tab.videos", "Videos tab should be localized")
         XCTAssertNotEqual(
-            String(localized: "tab.import"), "tab.import", "Import tab should be localized")
+            String(localized: "tab.files"), "tab.files", "Files tab should be localized")
         XCTAssertNotEqual(
-            String(localized: "tab.export"), "tab.export", "Export tab should be localized")
+            String(localized: "tab.secretSpace"), "tab.secretSpace",
+            "Secret space tab should be localized")
         XCTAssertNotEqual(
             String(localized: "tab.settings"), "tab.settings", "Settings tab should be localized")
     }
@@ -70,11 +74,11 @@ class LocalizationTests: XCTestCase {
             String(localized: "gallery.title"), "gallery.title", "Gallery title should be localized"
         )
         XCTAssertNotEqual(
-            String(localized: "gallery.searchPlaceholder"), "gallery.searchPlaceholder",
+            String(localized: "gallery.search.placeholder"), "gallery.search.placeholder",
             "Search placeholder should be localized")
         XCTAssertNotEqual(
-            String(localized: "gallery.noPhotos"), "gallery.noPhotos",
-            "No photos message should be localized")
+            String(localized: "gallery.empty.title"), "gallery.empty.title",
+            "No media message should be localized")
     }
 
     // MARK: - Settings Strings
@@ -84,10 +88,10 @@ class LocalizationTests: XCTestCase {
             String(localized: "settings.title"), "settings.title",
             "Settings title should be localized")
         XCTAssertNotEqual(
-            String(localized: "settings.language"), "settings.language",
-            "Language setting should be localized")
+            String(localized: "settings.gridColumns"), "settings.gridColumns",
+            "Grid columns setting should be localized")
         XCTAssertNotEqual(
-            String(localized: "settings.logout"), "settings.logout",
+            String(localized: "settings.logout.title"), "settings.logout.title",
             "Logout button should be localized")
     }
 
@@ -98,7 +102,7 @@ class LocalizationTests: XCTestCase {
         UserDefaults.standard.set(["zh-Hans"], forKey: "AppleLanguages")
 
         // Test that Chinese strings are different from English
-        let englishTitle = String(localized: "login.title")
+        _ = String(localized: "login.title")
 
         // Force reload bundle for Chinese
         UserDefaults.standard.set(["zh-Hans"], forKey: "AppleLanguages")
@@ -115,15 +119,15 @@ class LocalizationTests: XCTestCase {
         // Test that all critical strings exist in the catalog
         let requiredKeys = [
             "login.title",
-            "login.email",
-            "login.password",
-            "login.button",
-            "register.title",
-            "register.button",
-            "tab.gallery",
+            "login.subtitle",
+            "login.passwordPlaceholder",
+            "login.unlock",
+            "setup.header.title",
+            "setup.finish",
+            "tab.photos",
             "tab.videos",
-            "tab.import",
-            "tab.export",
+            "tab.files",
+            "tab.secretSpace",
             "tab.settings",
             "gallery.title",
             "settings.title",

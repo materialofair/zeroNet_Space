@@ -16,11 +16,15 @@ struct ImportButtonsView: View {
     // MARK: - Properties
 
     @StateObject private var viewModel = ImportViewModel()
+    @ObservedObject private var purchaseManager = PurchaseManager.shared
     @Environment(\.dismiss) var dismiss
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject var authViewModel: AuthenticationViewModel
 
     let onImportComplete: ([MediaItem]) -> Void
+
+    @State private var showImportSuccess = false
+    @State private var importSuccessCount = 0
 
     // MARK: - Body
 
@@ -99,14 +103,51 @@ struct ImportButtonsView: View {
                 isPresented: $viewModel.showLimitAlert
             ) {
                 Button(String(localized: "iap.unlockUnlimited.button")) {
-                    // Navigate to settings for purchase
                     viewModel.showLimitAlert = false
+                    // 直接拉起内购，避免"解锁"按钮成为死胡同
+                    Task { @MainActor in
+                        let success = await purchaseManager.purchase()
+                        if success {
+                            dismiss()
+                        } else if let error = purchaseManager.purchaseError,
+                            error == String(localized: "iap.error.cancelled")
+                                || error == String(localized: "iap.error.pending")
+                        {
+                            // 用户取消/待批准属于正常流程，不当作错误弹窗
+                            purchaseManager.purchaseError = nil
+                        }
+                    }
                 }
                 Button(String(localized: "common.cancel"), role: .cancel) {
                     viewModel.showLimitAlert = false
                 }
             } message: {
                 Text(viewModel.limitAlertMessage)
+            }
+            .alert(
+                String(localized: "common.error"),
+                isPresented: Binding(
+                    get: { purchaseManager.purchaseError != nil },
+                    set: { if !$0 { purchaseManager.purchaseError = nil } }
+                )
+            ) {
+                Button(String(localized: "common.ok"), role: .cancel) {}
+            } message: {
+                Text(purchaseManager.purchaseError ?? "")
+            }
+            .alert(
+                String(localized: "import.success.title"),
+                isPresented: $showImportSuccess
+            ) {
+                Button(String(localized: "common.ok")) {
+                    showImportSuccess = false
+                    dismiss()
+                }
+            } message: {
+                Text(
+                    String(
+                        format: String(localized: "import.success.count"),
+                        importSuccessCount))
             }
             .onAppear {
                 print("🔧 ImportButtonsView 初始化...")
@@ -116,9 +157,13 @@ struct ImportButtonsView: View {
                 viewModel.authViewModel = authViewModel
                 viewModel.onImportComplete = { items in
                     onImportComplete(items)
-                    // 延迟关闭，显示成功消息
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+
+                    if items.isEmpty {
                         dismiss()
+                    } else {
+                        // 显示成功提示，用户确认后关闭
+                        importSuccessCount = items.count
+                        showImportSuccess = true
                     }
                 }
 

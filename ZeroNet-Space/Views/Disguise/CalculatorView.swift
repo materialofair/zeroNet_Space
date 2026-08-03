@@ -21,30 +21,53 @@ struct CalculatorView: View {
         [.zero, .decimal, .equals],
     ]
 
+    // 按钮间距与左右留白
+    private let buttonSpacing: CGFloat = 12
+    private let horizontalPadding: CGFloat = 16
+
     var body: some View {
         ZStack {
             // 黑色背景（系统计算器风格）
             Color.black.ignoresSafeArea()
 
-            VStack(spacing: 12) {
-                Spacer()
+            // 用 GeometryReader 按可用区域计算按钮尺寸，
+            // 适配不同机型与横屏/分屏，避免按屏幕宽度硬编码导致溢出
+            GeometryReader { geometry in
+                let availableWidth = max(geometry.size.width - horizontalPadding * 2, 0)
+                let widthBasedButton = (availableWidth - buttonSpacing * 3) / 4
 
-                // 显示屏
-                displayView
+                // 显示屏预留约 22% 高度，其余给 5 行按钮
+                let displayHeight = geometry.size.height * 0.22
+                let buttonAreaHeight = max(
+                    geometry.size.height - displayHeight - buttonSpacing * 2, 0)
+                let heightBasedButton = (buttonAreaHeight - buttonSpacing * 4) / 5
 
-                // 按钮网格
-                ForEach(buttons, id: \.self) { row in
-                    HStack(spacing: 12) {
-                        ForEach(row, id: \.self) { button in
-                            CalculatorButtonView(
-                                button: button,
-                                viewModel: viewModel
-                            )
+                // 取宽高两个维度中更紧的那个，并保证最小可点击尺寸
+                let buttonSize = max(min(widthBasedButton, heightBasedButton), 44)
+
+                VStack(spacing: buttonSpacing) {
+                    Spacer(minLength: 0)
+
+                    // 显示屏
+                    displayView(fontSize: min(80, buttonSize))
+
+                    // 按钮网格
+                    ForEach(buttons, id: \.self) { row in
+                        HStack(spacing: buttonSpacing) {
+                            ForEach(row, id: \.self) { button in
+                                CalculatorButtonView(
+                                    button: button,
+                                    viewModel: viewModel,
+                                    buttonSize: buttonSize,
+                                    spacing: buttonSpacing
+                                )
+                            }
                         }
                     }
                 }
+                .padding(.horizontal, horizontalPadding)
+                .padding(.vertical, buttonSpacing)
             }
-            .padding()
         }
         .onReceive(NotificationCenter.default.publisher(for: .unlockFromDisguise)) { _ in
             // 收到解锁通知
@@ -54,13 +77,13 @@ struct CalculatorView: View {
 
     // MARK: - Display View
 
-    private var displayView: some View {
+    private func displayView(fontSize: CGFloat) -> some View {
         Text(viewModel.state.displayValue)
-            .font(.system(size: 80, weight: .light, design: .default))
+            .font(.system(size: fontSize, weight: .light, design: .default))
             .foregroundColor(.white)
             .frame(maxWidth: .infinity, alignment: .trailing)
             .padding(.horizontal)
-            .padding(.bottom, 20)
+            .padding(.bottom, 8)
             .minimumScaleFactor(0.5)
             .lineLimit(1)
     }
@@ -71,41 +94,33 @@ struct CalculatorView: View {
 struct CalculatorButtonView: View {
     let button: CalculatorButton
     @ObservedObject var viewModel: CalculatorViewModel
+    let buttonSize: CGFloat
+    let spacing: CGFloat
 
     var body: some View {
         Button(action: {
             handleButtonPress()
         }) {
             Text(button.title)
-                .font(.system(size: 32, weight: .medium))
+                .font(.system(size: min(32, buttonSize * 0.4), weight: .medium))
                 .foregroundColor(.white)
                 .frame(
                     width: buttonWidth(),
-                    height: buttonHeight()
+                    height: buttonSize
                 )
                 .background(button.backgroundColor)
-                .cornerRadius(buttonHeight() / 2)
+                .cornerRadius(buttonSize / 2)
         }
     }
 
     // MARK: - Button Dimensions
 
     private func buttonWidth() -> CGFloat {
-        let screenWidth = UIScreen.main.bounds.width
-        let totalSpacing: CGFloat = 5 * 12  // 4 gaps + padding
-        let buttonSize = (screenWidth - totalSpacing) / 4
-
         // 0 按钮占两列
         if button == .zero {
-            return buttonSize * 2 + 12
+            return buttonSize * 2 + spacing
         }
         return buttonSize
-    }
-
-    private func buttonHeight() -> CGFloat {
-        let screenWidth = UIScreen.main.bounds.width
-        let totalSpacing: CGFloat = 5 * 12
-        return (screenWidth - totalSpacing) / 4
     }
 
     // MARK: - Button Handler

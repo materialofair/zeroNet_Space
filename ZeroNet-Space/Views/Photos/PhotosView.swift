@@ -3,7 +3,7 @@
 //  ZeroNet-Space
 //
 //  相片视图
-//  网格展示所有图片，支持预览和缩放
+//  网格展示所有图片，支持预览、缩放、搜索和批量选择
 //
 
 import SwiftData
@@ -35,6 +35,11 @@ struct PhotosView: View {
     @State private var selectedPhoto: MediaItem?
     @State private var photoToDelete: MediaItem?
     @State private var deleteErrorMessage: String?
+    @State private var searchText = ""
+    @State private var isSelectionMode = false
+    @State private var selectedPhotoIDs: Set<UUID> = []
+    @State private var batchPhotosToDelete: [MediaItem] = []
+    @State private var showBatchDeleteConfirmation = false
 
     // MARK: - Constants
 
@@ -52,14 +57,23 @@ struct PhotosView: View {
                 // 访客模式下始终显示空状态
                 if guestModeManager.isGuestMode || photos.isEmpty {
                     emptyStateView
+                } else if filteredPhotos.isEmpty {
+                    searchEmptyView
                 } else {
                     photoGridView
                 }
             }
             .navigationTitle(String(localized: "photos.title"))
+            .searchable(
+                text: $searchText,
+                placement: .navigationBarDrawer(displayMode: .automatic),
+                prompt: String(localized: "gallery.search.placeholder")
+            )
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    if !photos.isEmpty {
+                    if isSelectionMode && !filteredPhotos.isEmpty {
+                        selectAllButton
+                    } else if !photos.isEmpty {
                         Button {
                             showExportView = true
                         } label: {
@@ -71,16 +85,27 @@ struct PhotosView: View {
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    // 访客模式下隐藏导入按钮
-                    if guestModeManager.isOwnerMode {
-                        Button {
-                            showImportView = true
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title3)
-                                .symbolRenderingMode(.hierarchical)
+                    if isSelectionMode {
+                        cancelButton
+                    } else if guestModeManager.isOwnerMode {
+                        HStack(spacing: 16) {
+                            if !photos.isEmpty {
+                                selectButton
+                            }
+                            Button {
+                                showImportView = true
+                            } label: {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.title3)
+                                    .symbolRenderingMode(.hierarchical)
+                            }
                         }
                     }
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                if isSelectionMode && !selectedPhotoIDs.isEmpty {
+                    batchActionsToolbar
                 }
             }
             .sheet(isPresented: $showImportView) {
@@ -96,7 +121,7 @@ struct PhotosView: View {
                     .environmentObject(authViewModel)
             }
             .fullScreenCover(item: $selectedPhoto) { photo in
-                PhotoDetailView(photo: photo, allPhotos: photos)
+                PhotoDetailView(photo: photo, allPhotos: filteredPhotos)
                     .environmentObject(authViewModel)
             }
             .alert(
@@ -115,6 +140,20 @@ struct PhotosView: View {
                 Text(String(localized: "photo.delete.confirmMessage"))
             }
             .alert(
+                String(localized: "photo.delete.confirmTitle"),
+                isPresented: $showBatchDeleteConfirmation
+            ) {
+                Button(String(localized: "common.delete"), role: .destructive) {
+                    deletePhotos(batchPhotosToDelete)
+                }
+                Button(String(localized: "common.cancel"), role: .cancel) {}
+            } message: {
+                Text(
+                    String(
+                        format: String(localized: "photos.delete.multipleMessage"),
+                        batchPhotosToDelete.count))
+            }
+            .alert(
                 String(localized: "common.error"),
                 isPresented: Binding(
                     get: { deleteErrorMessage != nil },
@@ -124,6 +163,10 @@ struct PhotosView: View {
                 Button(String(localized: "common.ok"), role: .cancel) {}
             } message: {
                 Text(deleteErrorMessage ?? "")
+            }
+            .onChange(of: searchText) { _, _ in
+                // 搜索条件变化后清除选择，避免"已选择 N 项"与实际可见结果不一致
+                selectedPhotoIDs.removeAll()
             }
             .task {
                 cleanupInvalidPhotos()
@@ -214,30 +257,149 @@ struct PhotosView: View {
         }
     }
 
+    // MARK: - Search Empty State
+
+    private var searchEmptyView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 50))
+                .foregroundColor(.secondary)
+
+            Text(String(localized: "photos.search.noResults"))
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+        }
+    }
+
     // MARK: - Photo Grid
 
     private var photoGridView: some View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 2) {
-                ForEach(photos) { photo in
-                    GridItemView(mediaItem: photo)
-                        .aspectRatio(1, contentMode: .fill)
-                        .onTapGesture {
-                            selectedPhoto = photo
+                ForEach(filteredPhotos) { photo in
+                    if isSelectionMode {
+                        // 选择模式：点击切换选择状态
+                        Button {
+                            toggleSelection(for: photo)
+                        } label: {
+                            GridItemView(
+                                mediaItem: photo,
+                                isSelectionMode: true,
+                                isSelected: selectedPhotoIDs.contains(photo.id)
+                            )
+                            .aspectRatio(1, contentMode: .fill)
                         }
-                        .contextMenu {
-                            Button(role: .destructive) {
-                                photoToDelete = photo
-                            } label: {
-                                Label(String(localized: "common.delete"), systemImage: "trash")
+                        .buttonStyle(.plain)
+                    } else {
+                        // 正常模式：点击预览
+                        GridItemView(mediaItem: photo)
+                            .aspectRatio(1, contentMode: .fill)
+                            .onTapGesture {
+                                selectedPhoto = photo
                             }
-                        }
+                            .contextMenu {
+                                Button(role: .destructive) {
+                                    photoToDelete = photo
+                                } label: {
+                                    Label(
+                                        String(localized: "common.delete"),
+                                        systemImage: "trash")
+                                }
+                            }
+                    }
                 }
             }
         }
     }
 
+    // MARK: - Toolbar Items
+
+    private var selectButton: some View {
+        Button {
+            isSelectionMode = true
+        } label: {
+            Text(String(localized: "common.select"))
+        }
+    }
+
+    private var selectAllButton: some View {
+        Button {
+            if selectedPhotoIDs.count == filteredPhotos.count {
+                selectedPhotoIDs.removeAll()
+            } else {
+                selectedPhotoIDs = Set(filteredPhotos.map { $0.id })
+            }
+        } label: {
+            Text(
+                selectedPhotoIDs.count == filteredPhotos.count
+                    ? String(localized: "export.deselectAll")
+                    : String(localized: "common.selectAll"))
+        }
+    }
+
+    private var cancelButton: some View {
+        Button {
+            isSelectionMode = false
+            selectedPhotoIDs.removeAll()
+        } label: {
+            Text(String(localized: "common.cancel"))
+        }
+    }
+
+    // MARK: - Batch Actions Toolbar
+
+    private var batchActionsToolbar: some View {
+        VStack(spacing: 0) {
+            Divider()
+
+            HStack(spacing: 20) {
+                Text(
+                    String(
+                        format: String(localized: "gallery.selectedCount"),
+                        selectedPhotoIDs.count)
+                )
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+
+                Spacer()
+
+                Button(role: .destructive) {
+                    batchPhotosToDelete = filteredPhotos.filter {
+                        selectedPhotoIDs.contains($0.id)
+                    }
+                    showBatchDeleteConfirmation = true
+                } label: {
+                    Label(String(localized: "common.delete"), systemImage: "trash")
+                        .font(.subheadline)
+                }
+            }
+            .padding()
+            .background(.ultraThinMaterial)
+        }
+    }
+
+    // MARK: - Computed Properties
+
+    /// 按搜索关键词过滤后的相片列表
+    private var filteredPhotos: [MediaItem] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return photos }
+
+        return photos.filter { item in
+            item.fileName.localizedCaseInsensitiveContains(query)
+                || item.fileExtension.localizedCaseInsensitiveContains(query)
+        }
+    }
+
     // MARK: - Methods
+
+    private func toggleSelection(for photo: MediaItem) {
+        if selectedPhotoIDs.contains(photo.id) {
+            selectedPhotoIDs.remove(photo.id)
+        } else {
+            selectedPhotoIDs.insert(photo.id)
+        }
+    }
 
     private func deletePhoto(_ photo: MediaItem) {
         let encryptedPath = photo.encryptedPath
@@ -261,6 +423,43 @@ struct PhotosView: View {
             // 记录已删除，文件删除失败只会残留无引用的加密文件
             print("⚠️ 加密文件删除失败: \(error)")
         }
+    }
+
+    /// 批量删除选中的相片
+    private func deletePhotos(_ items: [MediaItem]) {
+        guard !items.isEmpty else { return }
+
+        let encryptedPaths = items.map { $0.encryptedPath }
+
+        // 先提交数据库删除，成功后再删文件，
+        // 避免 save 失败时留下指向已删除文件的记录
+        for item in items {
+            modelContext.delete(item)
+        }
+        do {
+            try modelContext.save()
+        } catch {
+            modelContext.rollback()
+            deleteErrorMessage = String(
+                format: String(localized: "gallery.error.deleteFailed"),
+                error.localizedDescription)
+            return
+        }
+
+        for path in encryptedPaths {
+            do {
+                try FileStorageService.shared.deleteFile(path: path)
+            } catch {
+                // 记录已删除，文件删除失败只会残留无引用的加密文件
+                print("⚠️ 加密文件删除失败: \(path) - \(error)")
+            }
+        }
+
+        // 退出选择模式并清空选择
+        isSelectionMode = false
+        selectedPhotoIDs.removeAll()
+        batchPhotosToDelete = []
+        showBatchDeleteConfirmation = false
     }
 }
 
