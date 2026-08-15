@@ -174,12 +174,10 @@ struct FilePreviewView: View {
 
         Task {
             do {
-                let storage = FileStorageService.shared
-                let encryption = EncryptionService.shared
-                let encryptedData = try storage.loadEncrypted(path: file.encryptedPath)
-                let decryptedData = try encryption.decrypt(
-                    encryptedData: encryptedData,
-                    password: password
+                let decryptedData = try await FileStorageService.shared.loadDecryptedDataAsync(
+                    path: file.encryptedPath,
+                    password: password,
+                    preferredExtension: file.fileExtension
                 )
 
                 await MainActor.run {
@@ -275,12 +273,10 @@ struct FilePreviewView: View {
 
         Task {
             do {
-                let storage = FileStorageService.shared
-                let encryption = EncryptionService.shared
-                let encryptedData = try storage.loadEncrypted(path: file.encryptedPath)
-                let decryptedData = try encryption.decrypt(
-                    encryptedData: encryptedData,
-                    password: password
+                let decryptedData = try await FileStorageService.shared.loadDecryptedDataAsync(
+                    path: file.encryptedPath,
+                    password: password,
+                    preferredExtension: file.fileExtension
                 )
 
                 guard let text = String(data: decryptedData, encoding: .utf8) else {

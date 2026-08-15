@@ -17,6 +17,7 @@ struct GridItemView: View {
     var isSelected: Bool = false
     @State private var thumbnailImage: UIImage?
     @State private var isLoadingThumbnail = false
+    @State private var didFailToLoadThumbnail = false
 
     // MARK: - Body
 
@@ -48,8 +49,8 @@ struct GridItemView: View {
             )
         }
         .aspectRatio(1, contentMode: .fill)
-        .onAppear {
-            loadThumbnailIfNeeded()
+        .task(id: mediaItem.id) {
+            await loadThumbnailIfNeeded()
         }
     }
 
@@ -63,7 +64,7 @@ struct GridItemView: View {
                 .resizable()
                 .aspectRatio(contentMode: .fill)
                 .frame(width: size.width, height: size.height)
-        } else if mediaItem.thumbnailData != nil {
+        } else if mediaItem.thumbnailData != nil && !didFailToLoadThumbnail {
             placeholderView
                 .overlay {
                     ProgressView()
@@ -144,24 +145,29 @@ struct GridItemView: View {
 
     // MARK: - Helpers
 
-    private func loadThumbnailIfNeeded() {
+    private func loadThumbnailIfNeeded() async {
+        // 失败过的缩略图不再重复尝试，避免每次重新出现都重新解密解码
         guard thumbnailImage == nil,
             !isLoadingThumbnail,
+            !didFailToLoadThumbnail,
             let thumbnailData = mediaItem.thumbnailData
         else {
             return
         }
 
         isLoadingThumbnail = true
-
-        DispatchQueue.global(qos: .userInitiated).async {
-            let image = UIImage(data: thumbnailData)
-
-            DispatchQueue.main.async {
-                self.thumbnailImage = image
-                self.isLoadingThumbnail = false
-            }
+        let image = await ThumbnailImageLoader.shared.image(
+            for: mediaItem.id.uuidString,
+            data: thumbnailData
+        )
+        guard !Task.isCancelled else {
+            isLoadingThumbnail = false
+            return
         }
+
+        thumbnailImage = image
+        isLoadingThumbnail = false
+        didFailToLoadThumbnail = image == nil
     }
 }
 

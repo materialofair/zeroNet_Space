@@ -39,7 +39,7 @@ enum FileStorageError: Error {
 }
 
 /// 文件存储服务
-class FileStorageService {
+nonisolated class FileStorageService: @unchecked Sendable {
 
     // MARK: - Singleton
 
@@ -51,16 +51,22 @@ class FileStorageService {
     private let storageDirectoryName = AppConstants.encryptedMediaDirectory
     private let fileExtension = AppConstants.encryptedFileExtension
     private let encryptionService = EncryptionService.shared
-
-    // 存储目录URL（延迟计算）
-    private lazy var storageDirectory: URL = {
-        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        return documentsURL.appendingPathComponent(storageDirectoryName)
+    private let decryptionQueue: OperationQueue = {
+        let queue = OperationQueue()
+        queue.name = "com.zeronetspace.media-decryption"
+        queue.qualityOfService = .userInitiated
+        queue.maxConcurrentOperationCount = 2
+        return queue
     }()
+
+    // 存储目录URL
+    private let storageDirectory: URL
 
     // MARK: - Initialization
 
     private init() {
+        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        storageDirectory = documentsURL.appendingPathComponent(storageDirectoryName)
         // 确保存储目录存在
         createStorageDirectoryIfNeeded()
     }
@@ -322,7 +328,7 @@ class FileStorageService {
 
 // MARK: - Storage Statistics
 
-extension FileStorageService {
+nonisolated extension FileStorageService {
 
     /// 存储统计信息
     struct StorageStatistics {
@@ -380,16 +386,103 @@ extension FileStorageService {
         preferredExtension: String
     ) throws -> URL {
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(
-            UUID().uuidString + preferredExtension
+            UUID().uuidString + sanitizedExtension(preferredExtension)
         )
 
         let sourceURL = getFileURL(for: path)
-        try encryptionService.decryptFile(
-            inputURL: sourceURL,
-            to: tempURL,
-            password: password
-        )
+        do {
+            try encryptionService.decryptFile(
+                inputURL: sourceURL,
+                to: tempURL,
+                password: password
+            )
 
-        return tempURL
+            // 明文临时文件必须使用最高文件保护级别，防止锁屏后被读取
+            try FileManager.default.setAttributes(
+                [.protectionKey: FileProtectionType.complete],
+                ofItemAtPath: tempURL.path
+            )
+
+            return tempURL
+        } catch {
+            // 解密失败时清理可能残留的半成品文件
+            try? FileManager.default.removeItem(at: tempURL)
+            throw error
+        }
+    }
+
+    /// 在受控后台队列中解密媒体，避免翻页或打开播放器时阻塞主线程。
+    func createDecryptedTempFileAsync(
+        path: String,
+        password: String,
+        preferredExtension: String
+    ) async throws -> URL {
+        try Task.checkCancellation()
+        return try await withCheckedThrowingContinuation { continuation in
+            decryptionQueue.addOperation {
+                do {
+                    continuation.resume(
+                        returning: try self.createDecryptedTempFile(
+                            path: path,
+                            password: password,
+                            preferredExtension: preferredExtension
+                        )
+                    )
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    /// 在受控后台队列中读取并解密文件数据，兼容标准和流式加密格式。
+    func loadDecryptedDataAsync(
+        path: String,
+        password: String,
+        preferredExtension: String
+    ) async throws -> Data {
+        try Task.checkCancellation()
+        return try await withCheckedThrowingContinuation { continuation in
+            decryptionQueue.addOperation {
+                do {
+                    let sourceURL = self.getFileURL(for: path)
+
+                    // 只读取 4 字节魔数判断加密格式，避免把整个加密文件读入内存
+                    let handle = try FileHandle(forReadingFrom: sourceURL)
+                    let magic = try handle.read(upToCount: 4) ?? Data()
+                    try handle.close()
+                    let chunkMagic = Data("ZNSC".utf8)
+
+                    if magic == chunkMagic {
+                        // 流式加密：解密到临时文件后读取（临时文件用完即删）
+                        let tempURL = try self.createDecryptedTempFile(
+                            path: path,
+                            password: password,
+                            preferredExtension: preferredExtension
+                        )
+                        defer { try? FileManager.default.removeItem(at: tempURL) }
+                        continuation.resume(returning: try Data(contentsOf: tempURL))
+                    } else {
+                        let encryptedData = try self.loadEncrypted(path: path)
+                        continuation.resume(
+                            returning: try self.encryptionService.decrypt(
+                                encryptedData: encryptedData,
+                                password: password
+                            )
+                        )
+                    }
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    /// 清洗文件扩展名，防止非法字符混入临时文件名（未来调用方的路径穿越风险）
+    private func sanitizedExtension(_ fileExtension: String) -> String {
+        let cleaned = fileExtension
+            .trimmingCharacters(in: CharacterSet(charactersIn: "."))
+            .filter { $0.isLetter || $0.isNumber }
+        return cleaned.isEmpty ? "" : "." + cleaned
     }
 }

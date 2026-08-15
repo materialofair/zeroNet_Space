@@ -23,6 +23,7 @@ struct MediaDetailView: View {
     @EnvironmentObject var authViewModel: AuthenticationViewModel
 
     @State private var decryptedData: Data?
+    @State private var decryptedImage: UIImage?
     @State private var isLoading: Bool = true
     @State private var errorMessage: String?
     @State private var showDeleteConfirmation: Bool = false
@@ -47,7 +48,6 @@ struct MediaDetailView: View {
     // MARK: - Services
 
     private let storageService = FileStorageService.shared
-    private let encryptionService = EncryptionService.shared
     private let keychainService = KeychainService.shared
 
     // MARK: - Body
@@ -188,7 +188,10 @@ struct MediaDetailView: View {
     private func mediaContent(data: Data) -> some View {
         switch mediaItem.type {
         case .photo:
-            photoView(data: data)
+            // 照片已在后台降采样解码为 decryptedImage，避免主线程解码全分辨率大图
+            if let image = decryptedImage {
+                photoView(image: image)
+            }
         case .video:
             videoView()
         case .document:
@@ -198,57 +201,55 @@ struct MediaDetailView: View {
 
     // MARK: - Photo View
 
-    private func photoView(data: Data) -> some View {
+    private func photoView(image: UIImage) -> some View {
         GeometryReader { geometry in
-            if let uiImage = UIImage(data: data) {
-                Image(uiImage: uiImage)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .scaleEffect(imageScale)
-                    .offset(imageOffset)
-                    .gesture(
-                        MagnificationGesture()
-                            .onChanged { value in
-                                imageScale = value
-                            }
-                            .onEnded { _ in
-                                withAnimation(.spring()) {
-                                    if imageScale < 1 {
-                                        imageScale = 1
-                                        imageOffset = .zero
-                                    } else if imageScale > 3 {
-                                        imageScale = 3
-                                    }
+            Image(uiImage: image)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .scaleEffect(imageScale)
+                .offset(imageOffset)
+                .gesture(
+                    MagnificationGesture()
+                        .onChanged { value in
+                            imageScale = value
+                        }
+                        .onEnded { _ in
+                            withAnimation(.spring()) {
+                                if imageScale < 1 {
+                                    imageScale = 1
+                                    imageOffset = .zero
+                                } else if imageScale > 3 {
+                                    imageScale = 3
                                 }
-                            }
-                    )
-                    .gesture(
-                        DragGesture()
-                            .onChanged { value in
-                                if imageScale > 1 {
-                                    imageOffset = value.translation
-                                }
-                            }
-                            .onEnded { _ in
-                                withAnimation(.spring()) {
-                                    if imageScale <= 1 {
-                                        imageOffset = .zero
-                                    }
-                                }
-                            }
-                    )
-                    .onTapGesture(count: 2) {
-                        withAnimation(.spring()) {
-                            if imageScale == 1 {
-                                imageScale = 2
-                            } else {
-                                imageScale = 1
-                                imageOffset = .zero
                             }
                         }
+                )
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            if imageScale > 1 {
+                                imageOffset = value.translation
+                            }
+                        }
+                        .onEnded { _ in
+                            withAnimation(.spring()) {
+                                if imageScale <= 1 {
+                                    imageOffset = .zero
+                                }
+                            }
+                        }
+                )
+                .onTapGesture(count: 2) {
+                    withAnimation(.spring()) {
+                        if imageScale == 1 {
+                            imageScale = 2
+                        } else {
+                            imageScale = 1
+                            imageOffset = .zero
+                        }
                     }
-                    .frame(width: geometry.size.width, height: geometry.size.height)
-            }
+                }
+                .frame(width: geometry.size.width, height: geometry.size.height)
         }
     }
 
@@ -481,7 +482,7 @@ struct MediaDetailView: View {
             }
 
             if mediaItem.type == .video {
-                let tempURL = try storageService.createDecryptedTempFile(
+                let tempURL = try await storageService.createDecryptedTempFileAsync(
                     path: mediaItem.encryptedPath,
                     password: password,
                     preferredExtension: mediaItem.fileExtension
@@ -495,38 +496,32 @@ struct MediaDetailView: View {
                 return
             }
 
-            // 检查文件加密格式（流式加密 vs 标准加密）
-            let fileURL = storageService.getFileURL(for: mediaItem.encryptedPath)
-            let encryptedData = try storageService.loadEncrypted(path: mediaItem.encryptedPath)
-            print("📊 加密数据大小: \(encryptedData.count) bytes")
+            let data = try await storageService.loadDecryptedDataAsync(
+                path: mediaItem.encryptedPath,
+                password: password,
+                preferredExtension: mediaItem.fileExtension
+            )
 
-            // 检查是否为流式加密（ZNSC魔数）
-            let chunkMagic = "ZNSC".data(using: .utf8)!
-            let isStreamEncrypted = encryptedData.count > 4 && encryptedData.prefix(4) == chunkMagic
-
-            print("🔍 加密格式检测: \(isStreamEncrypted ? "流式加密" : "标准加密")")
-
-            let data: Data
-            if isStreamEncrypted {
-                // 使用流式解密
-                print("🔓 使用流式解密...")
-                let tempDecryptURL = FileManager.default.temporaryDirectory
-                    .appendingPathComponent(UUID().uuidString + mediaItem.fileExtension)
-
-                try encryptionService.decryptFile(
-                    inputURL: fileURL,
-                    to: tempDecryptURL,
-                    password: password
+            // 照片在后台降采样解码，避免主线程解码 12MP+ 大图造成卡顿
+            if mediaItem.type == .photo {
+                let image = await ThumbnailImageLoader.shared.image(
+                    for: mediaItem.id.uuidString,
+                    data: data,
+                    maxPixelSize: AppConstants.previewImageMaxPixelSize
                 )
-                data = try Data(contentsOf: tempDecryptURL)
-                try? FileManager.default.removeItem(at: tempDecryptURL)
-                print("✅ 流式解密成功，数据大小: \(data.count) bytes")
-            } else {
-                // 使用标准解密
-                print("🔓 使用标准解密...")
-                data = try encryptionService.decrypt(
-                    encryptedData: encryptedData, password: password)
-                print("✅ 标准解密成功，数据大小: \(data.count) bytes")
+
+                await MainActor.run {
+                    guard let image = image else {
+                        self.errorMessage = MediaLoaderError.invalidImageData.localizedDescription
+                        self.isLoading = false
+                        return
+                    }
+                    self.decryptedImage = image
+                    self.decryptedData = data
+                    self.isLoading = false
+                    print("✅ 图片已降采样解码: \(Int(image.size.width * image.scale))x\(Int(image.size.height * image.scale))")
+                }
+                return
             }
 
             await MainActor.run {
@@ -616,6 +611,8 @@ struct MediaDetailView: View {
     private func setupVideoPlayer(url: URL) {
         videoTempURL = url
         videoPlayer = AVPlayer(url: url)
+        // 激活音频会话，保证静音开关打开时内嵌预览也有声音
+        AVAudioSession.activateForVideoPlayback()
         print("▶️ 视频播放器已创建")
     }
 
@@ -625,6 +622,7 @@ struct MediaDetailView: View {
         videoPlayer?.pause()
         videoPlayer?.replaceCurrentItem(with: nil)
         videoPlayer = nil
+        AVAudioSession.deactivateAfterVideoPlayback()
 
         // 删除临时文件
         if let tempURL = videoTempURL {
@@ -655,7 +653,8 @@ struct MediaDetailView: View {
         let tempURL = tempDir.appendingPathComponent(fileName)
 
         do {
-            try data.write(to: tempURL, options: .atomic)
+            // 明文文档临时文件使用最高文件保护级别，防止锁屏后被读取
+            try data.write(to: tempURL, options: [.atomic, .completeFileProtection])
             await MainActor.run {
                 documentTempURL = tempURL
             }

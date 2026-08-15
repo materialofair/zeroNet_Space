@@ -101,5 +101,23 @@
    <ArchiveAction
       buildConfiguration = "Release"
       revealArchiveInOrganizer = "YES">
+      <PostActions>
+         <ExecutionAction
+            ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
+            <ActionContent
+               title = "Prepare Next Build Number"
+               scriptText = "&quot;$SRCROOT/scripts/increment-build-number.sh&quot;">
+               <EnvironmentBuildable>
+                  <BuildableReference
+                     BuildableIdentifier = "primary"
+                     BlueprintIdentifier = "405590592EBB867900944275"
+                     BuildableName = "&#x96f6;&#x7f51;&#x7edc;&#x7a7a;&#x95f4;.app"
+                     BlueprintName = "ZeroNet-Space"
+                     ReferencedContainer = "container:ZeroNet-Space.xcodeproj">
+                  </BuildableReference>
+               </EnvironmentBuildable>
+            </ActionContent>
+         </ExecutionAction>
+      </PostActions>
    </ArchiveAction>
 </Scheme>

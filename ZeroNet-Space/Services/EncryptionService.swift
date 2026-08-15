@@ -75,7 +75,7 @@ enum EncryptionError: Error {
 
 /// 加密服务
 /// 提供AES-256-GCM加密和解密功能
-class EncryptionService {
+nonisolated class EncryptionService: @unchecked Sendable {
 
     // MARK: - Singleton
 
@@ -519,7 +519,7 @@ class EncryptionService {
     }
 }
 
-private extension FixedWidthInteger {
+nonisolated private extension FixedWidthInteger {
     var bigEndianData: Data {
         var value = bigEndian
         return Data(bytes: &value, count: MemoryLayout<Self>.size)

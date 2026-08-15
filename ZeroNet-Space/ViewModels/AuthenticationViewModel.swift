@@ -375,6 +375,10 @@ final class AuthenticationViewModel: ObservableObject {
         sessionPasswordData = nil
         sessionLoginPassword = nil
 
+        // 清空解密图片缓存，确保明文像素不跨会话残留
+        MediaLoaderService.shared.clearCache()
+        ThumbnailImageLoader.shared.clearAll()
+
         // 重置访客模式为主人模式
         GuestModeManager.shared.reset()
 
@@ -407,6 +411,10 @@ final class AuthenticationViewModel: ObservableObject {
         )
         sessionPasswordData = SecureBytes(dataPassword)
         sessionLoginPassword = newPassword
+
+        // 密码变更同样清空明文图片缓存，只保留新会话下的解密结果
+        MediaLoaderService.shared.clearCache()
+        ThumbnailImageLoader.shared.clearAll()
     }
 
     // MARK: - Computed Properties

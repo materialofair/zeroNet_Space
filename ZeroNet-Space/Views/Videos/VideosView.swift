@@ -244,16 +244,15 @@ struct VideosView: View {
 
 struct VideoCardView: View {
     let video: MediaItem
+    @State private var thumbnailImage: UIImage?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // 视频缩略图
             ZStack {
                 // 缩略图或占位背景
-                if let thumbnailData = video.thumbnailData,
-                    let uiImage = UIImage(data: thumbnailData)
-                {
-                    Image(uiImage: uiImage)
+                if let thumbnailImage {
+                    Image(uiImage: thumbnailImage)
                         .resizable()
                         .aspectRatio(16 / 9, contentMode: .fill)
                         .clipped()
@@ -317,6 +316,15 @@ struct VideoCardView: View {
         .background(Color(.systemBackground))
         .cornerRadius(12)
         .shadow(color: .black.opacity(0.1), radius: 5, x: 0, y: 2)
+        .task(id: video.id) {
+            guard let thumbnailData = video.thumbnailData else { return }
+            let image = await ThumbnailImageLoader.shared.image(
+                for: video.id.uuidString,
+                data: thumbnailData
+            )
+            guard !Task.isCancelled else { return }
+            thumbnailImage = image
+        }
     }
 
     private func formatFileSize(_ bytes: Int64) -> String {

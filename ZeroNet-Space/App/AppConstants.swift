@@ -8,7 +8,7 @@
 import Foundation
 
 /// 应用全局常量
-enum AppConstants {
+nonisolated enum AppConstants {
 
     // MARK: - App Info
 
@@ -17,11 +17,11 @@ enum AppConstants {
 
     /// 应用版本（从 Info.plist 读取，跟随 MARKETING_VERSION，避免手写过期）
     static let appVersion =
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.2.0"
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.0.0"
 
     /// 构建号（跟随 CURRENT_PROJECT_VERSION）
     static let buildNumber =
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "9"
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
 
     /// Bundle Identifier
     static let bundleIdentifier = "com.zeronetspace.unlimited-imports"
@@ -95,6 +95,9 @@ enum AppConstants {
 
     /// 缩略图最大尺寸（像素）
     static let thumbnailMaxSize: CGFloat = 300
+
+    /// 预览图片解码上限，避免高像素照片在翻页时造成内存和主线程压力
+    static let previewImageMaxPixelSize: CGFloat = 3_072
 
     /// 缩略图JPEG压缩质量（0.0-1.0）
     static let thumbnailCompressionQuality: CGFloat = 0.7

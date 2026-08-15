@@ -16,6 +16,7 @@ struct VideoPlayerView: View {
     let video: MediaItem
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var authViewModel: AuthenticationViewModel
     @State private var player: AVPlayer?
@@ -39,6 +40,17 @@ struct VideoPlayerView: View {
     @State private var showShareAlert = false
     @State private var showDeleteErrorAlert = false
     @State private var deleteErrorMessage: String?
+    @State private var volume: Float = 1.0
+    @State private var isBuffering = false
+    @State private var wasPlayingBeforeInterruption = false
+    @State private var seekFeedbackIcon: String?
+    @State private var seekFeedbackText: String?
+    @State private var controlsHideTask: Task<Void, Never>?
+    @State private var feedbackTask: Task<Void, Never>?
+    @State private var endObserver: NSObjectProtocol?
+    @State private var interruptionObserver: NSObjectProtocol?
+    @State private var statusObservation: NSKeyValueObservation?
+    @State private var loadTask: Task<Void, Never>?
 
     // MARK: - Body
 
@@ -50,24 +62,36 @@ struct VideoPlayerView: View {
             // 视频播放器（自绘控制条；用无控件的容器替代 AVKit VideoPlayer，
             // 避免系统原生控制条与自绘顶/底控制栏重叠）
             if let player = player {
-                PlayerContainerView(player: player)
-                    .ignoresSafeArea()
-                    .onAppear {
-                        // 视图出现后再开始播放，避免只出声音没有画面
-                        if !isPlaying {
-                            player.play()
-                            isPlaying = true
+                GeometryReader { proxy in
+                    PlayerContainerView(player: player)
+                        .ignoresSafeArea()
+                        .onAppear {
+                            // 视图出现后再开始播放，避免只出声音没有画面
+                            if !isPlaying {
+                                player.play()
+                                isPlaying = true
+                            }
                         }
-                    }
-                    .onDisappear {
-                        player.pause()
-                        isPlaying = false
-                    }
-                    .onTapGesture {
-                        withAnimation {
-                            showControls.toggle()
+                        .onDisappear {
+                            player.pause()
+                            isPlaying = false
                         }
-                    }
+                        .onTapGesture {
+                            withAnimation {
+                                showControls.toggle()
+                            }
+                        }
+                        .highPriorityGesture(
+                            // 双击左右区域快退/快进 10 秒（不切换控制条）
+                            SpatialTapGesture(count: 2)
+                                .onEnded { value in
+                                    let backward = value.location.x < proxy.size.width / 2
+                                    seek(by: backward ? -10 : 10)
+                                    showSeekFeedback(backward: backward)
+                                }
+                        )
+                }
+                .ignoresSafeArea()
             } else if let errorMessage = errorMessage {
                 // 错误提示
                 VStack(spacing: 20) {
@@ -104,6 +128,35 @@ struct VideoPlayerView: View {
                     .tint(.white)
             }
 
+            // 缓冲提示（播放中卡顿时显示）
+            if isBuffering && isPlaying && player != nil {
+                ProgressView()
+                    .tint(.white)
+                    .scaleEffect(1.3)
+            }
+
+            // 双击快进/快退反馈
+            if let icon = seekFeedbackIcon {
+                VStack(spacing: 8) {
+                    Image(systemName: icon)
+                        .font(.system(size: 36))
+                        .foregroundColor(.white)
+
+                    if let text = seekFeedbackText {
+                        Text(text)
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+                .background(Color.black.opacity(0.6))
+                .cornerRadius(14)
+                .allowsHitTesting(false)
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.2), value: seekFeedbackIcon)
+            }
+
             // 顶部/底部控制栏
             VStack {
                 topBar
@@ -127,15 +180,48 @@ struct VideoPlayerView: View {
             Text(String(localized: "video.delete.confirmMessage"))
         }
         .onAppear {
+            // 激活音频会话，保证静音开关打开时视频仍有声音
+            AVAudioSession.activateForVideoPlayback()
             setupPlayer()
+            registerInterruptionObserver()
         }
         .onDisappear {
+            loadTask?.cancel()
+            removePlaybackObservers()
             if let player = player, let observer = timeObserver {
                 player.removeTimeObserver(observer)
                 timeObserver = nil
             }
             player?.pause()
             cleanupTempFile()
+            AVAudioSession.deactivateAfterVideoPlayback()
+            UIApplication.shared.isIdleTimerDisabled = false
+            controlsHideTask?.cancel()
+            feedbackTask?.cancel()
+        }
+        .onChange(of: isPlaying) { _, playing in
+            // 播放时禁用自动锁屏，暂停时恢复
+            UIApplication.shared.isIdleTimerDisabled = playing
+            if playing {
+                scheduleControlsAutoHide()
+            } else {
+                controlsHideTask?.cancel()
+                withAnimation {
+                    showControls = true
+                }
+            }
+        }
+        .onChange(of: showControls) { _, visible in
+            if visible {
+                scheduleControlsAutoHide()
+            }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            // `.playback` 类别允许后台出声；退到后台必须暂停，避免声音在后台继续播放
+            if newPhase == .background, isPlaying {
+                player?.pause()
+                isPlaying = false
+            }
         }
         .sheet(
             isPresented: $showShareSheet,
@@ -232,15 +318,22 @@ struct VideoPlayerView: View {
         decryptMessage = String(localized: "video.decrypt.status")
         isDecrypting = true
 
-        // 异步解密并创建播放器
-        Task {
+        // 异步解密并创建播放器（持有 Task 引用，视图消失时可取消）
+        loadTask?.cancel()
+        loadTask = Task {
             do {
                 let storageService = FileStorageService.shared
-                let tempURL = try storageService.createDecryptedTempFile(
+                let tempURL = try await storageService.createDecryptedTempFileAsync(
                     path: video.encryptedPath,
                     password: password,
                     preferredExtension: video.fileExtension
                 )
+
+                // 视图已消失：立即清理解密出的临时文件，避免明文残留
+                if Task.isCancelled {
+                    try? FileManager.default.removeItem(at: tempURL)
+                    return
+                }
 
                 // 创建播放器（不立即播放，等视图出现后再播放）
                 await MainActor.run {
@@ -250,6 +343,27 @@ struct VideoPlayerView: View {
 
                     self.player = avPlayer
                     self.isPlaying = false
+
+                    // 播放结束后回到开头并显示重播状态
+                    self.endObserver = NotificationCenter.default.addObserver(
+                        forName: .AVPlayerItemDidPlayToEndTime,
+                        object: playerItem,
+                        queue: .main
+                    ) { _ in
+                        self.isPlaying = false
+                        self.currentTime = 0
+                        self.player?.seek(to: .zero)
+                    }
+
+                    // 监听缓冲状态，卡顿时显示加载提示
+                    self.statusObservation = avPlayer.observe(
+                        \.timeControlStatus, options: [.initial, .new]
+                    ) { observedPlayer, _ in
+                        let waiting = observedPlayer.timeControlStatus == .waitingToPlayAtSpecifiedRate
+                        DispatchQueue.main.async {
+                            self.isBuffering = waiting
+                        }
+                    }
 
                     // 同步总时长（优先使用播放器的时长，退回到元数据）
                     let assetDuration = playerItem.asset.duration
@@ -346,18 +460,31 @@ struct VideoPlayerView: View {
                             currentTime = newValue
                             guard let player = player else { return }
                             isScrubbing = true
+                            controlsHideTask?.cancel()
                             let time = CMTime(seconds: newValue, preferredTimescale: 600)
+                            // 拖动过程中宽松容差快速预览，松手后再精确 seek
+                            player.seek(
+                                to: time,
+                                toleranceBefore: .positiveInfinity,
+                                toleranceAfter: .positiveInfinity
+                            )
+                        }
+                    ),
+                    in: 0...max(duration, 1),
+                    onEditingChanged: { editing in
+                        if !editing {
+                            guard let player = player else { return }
+                            let time = CMTime(seconds: currentTime, preferredTimescale: 600)
                             player.seek(
                                 to: time,
                                 toleranceBefore: .zero,
                                 toleranceAfter: .zero
                             ) { _ in
                                 isScrubbing = false
+                                scheduleControlsAutoHide()
                             }
                         }
-                    ),
-                    in: 0...max(duration, 1),
-                    step: 1
+                    }
                 )
 
                 HStack {
@@ -369,8 +496,8 @@ struct VideoPlayerView: View {
                 .foregroundColor(.white.opacity(0.8))
             }
 
-            // 倍速 + 静音控制
-            HStack(spacing: 20) {
+            // 倍速 + 音量 + 静音控制
+            HStack(spacing: 8) {
                 // 倍速选择
                 HStack(spacing: 8) {
                     speedButton(title: "0.5x", rate: 0.5)
@@ -380,6 +507,20 @@ struct VideoPlayerView: View {
                 }
 
                 Spacer()
+
+                // 音量调节
+                Image(systemName: volumeIconName)
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .frame(width: 18)
+
+                Slider(value: $volume, in: 0...1)
+                    .frame(width: 80)
+                    .tint(.white)
+                    .onChange(of: volume) { _, newValue in
+                        player?.volume = newValue
+                        scheduleControlsAutoHide()
+                    }
 
                 // 静音切换
                 Button {
@@ -460,8 +601,8 @@ struct VideoPlayerView: View {
             Text(title)
                 .font(.caption)
                 .fontWeight(rate == playbackRate ? .bold : .regular)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+                // 固定宽高，保证所有倍速按钮大小一致
+                .frame(width: 40, height: 26)
                 .background(
                     Capsule().fill(
                         rate == playbackRate
@@ -476,7 +617,94 @@ struct VideoPlayerView: View {
     private func toggleMute() {
         guard let player = player else { return }
         isMuted.toggle()
+        // 取消静音时如果音量为 0，恢复到可听见的音量
+        if !isMuted && volume <= 0.01 {
+            volume = 0.5
+            player.volume = 0.5
+        }
         player.isMuted = isMuted
+    }
+
+    // MARK: - Playback Observers
+
+    /// 注册音频中断监听（来电、闹钟等），中断时暂停、结束后恢复
+    private func registerInterruptionObserver() {
+        guard interruptionObserver == nil else { return }
+        interruptionObserver = NotificationCenter.default.addObserver(
+            forName: AVAudioSession.interruptionNotification,
+            object: nil,
+            queue: .main
+        ) { notification in
+            guard let info = notification.userInfo,
+                let rawType = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+                let type = AVAudioSession.InterruptionType(rawValue: rawType)
+            else { return }
+
+            if type == .began {
+                wasPlayingBeforeInterruption = isPlaying
+                player?.pause()
+                isPlaying = false
+            } else if type == .ended, wasPlayingBeforeInterruption {
+                wasPlayingBeforeInterruption = false
+                // 仅当系统明确允许恢复时才自动继续播放
+                let rawOptions = (info[AVAudioSessionInterruptionOptionKey] as? UInt) ?? 0
+                let options = AVAudioSession.InterruptionOptions(rawValue: rawOptions)
+                guard options.contains(.shouldResume) else { return }
+                player?.play()
+                player?.rate = playbackRate
+                isPlaying = true
+            }
+        }
+    }
+
+    /// 移除与播放器相关的通知观察者和 KVO
+    private func removePlaybackObservers() {
+        statusObservation?.invalidate()
+        statusObservation = nil
+
+        if let observer = endObserver {
+            NotificationCenter.default.removeObserver(observer)
+            endObserver = nil
+        }
+        if let observer = interruptionObserver {
+            NotificationCenter.default.removeObserver(observer)
+            interruptionObserver = nil
+        }
+    }
+
+    // MARK: - Controls Auto-Hide
+
+    /// 播放中无操作一段时间后自动隐藏控制条
+    private func scheduleControlsAutoHide() {
+        controlsHideTask?.cancel()
+        guard isPlaying, !isScrubbing else { return }
+        controlsHideTask = Task {
+            try? await Task.sleep(nanoseconds: 3_500_000_000)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                showControls = false
+            }
+        }
+    }
+
+    /// 显示双击快进/快退的反馈提示，短暂停留后自动消失
+    private func showSeekFeedback(backward: Bool) {
+        seekFeedbackIcon = backward ? "gobackward.10" : "goforward.10"
+        seekFeedbackText = backward ? "-10s" : "+10s"
+        feedbackTask?.cancel()
+        feedbackTask = Task {
+            try? await Task.sleep(nanoseconds: 800_000_000)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                seekFeedbackIcon = nil
+            }
+        }
+    }
+
+    /// 音量图标：随静音状态和当前音量变化
+    private var volumeIconName: String {
+        if isMuted || volume <= 0.01 { return "speaker.slash.fill" }
+        return volume < 0.5 ? "speaker.wave.1.fill" : "speaker.wave.2.fill"
     }
 
     // MARK: - Delete Video
@@ -522,6 +750,7 @@ struct VideoPlayerView: View {
     /// 重新尝试加载视频（解密失败时使用）
     private func retryLoad() {
         cleanupTempFile()
+        removePlaybackObservers()
         errorMessage = nil
         player = nil
         timeObserver = nil
