@@ -296,6 +296,10 @@ class MediaImportService {
             return try await processVideo(url, password: password)
         }
 
+        if mediaType == .audio {
+            return try await AudioImportService.importFile(url: url, password: password)
+        }
+
         var encryptedPath: String
         var thumbnailData: Data?
 
@@ -459,7 +463,7 @@ class MediaImportService {
             // 视频缩略图需要URL，这里返回nil，在processVideo中单独处理
             return nil
 
-        case .document:
+        case .audio, .document:
             // 文档使用默认图标，不需要缩略图
             return nil
         }

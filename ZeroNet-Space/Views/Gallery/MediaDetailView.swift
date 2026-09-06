@@ -194,7 +194,7 @@ struct MediaDetailView: View {
             }
         case .video:
             videoView()
-        case .document:
+        case .audio, .document:
             documentView(data: data)
         }
     }

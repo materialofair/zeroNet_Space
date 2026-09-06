@@ -414,6 +414,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "zeroNet Space";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Record audio memos and store them encrypted on this device.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "需要访问您的照片库，将照片和视频加密存储到本地私密空间。所有内容仅保存在您的设备上，零上传、零追踪。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -454,6 +455,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "zeroNet Space";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Record audio memos and store them encrypted on this device.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "需要访问您的照片库，将照片和视频加密存储到本地私密空间。所有内容仅保存在您的设备上，零上传、零追踪。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

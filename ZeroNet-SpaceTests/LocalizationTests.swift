@@ -57,6 +57,8 @@ class LocalizationTests: XCTestCase {
         XCTAssertNotEqual(
             String(localized: "tab.photos"), "tab.photos", "Photos tab should be localized")
         XCTAssertNotEqual(
+            String(localized: "tab.media"), "tab.media", "Media tab should be localized")
+        XCTAssertNotEqual(
             String(localized: "tab.videos"), "tab.videos", "Videos tab should be localized")
         XCTAssertNotEqual(
             String(localized: "tab.files"), "tab.files", "Files tab should be localized")
@@ -125,7 +127,11 @@ class LocalizationTests: XCTestCase {
             "setup.header.title",
             "setup.finish",
             "tab.photos",
+            "tab.media",
             "tab.videos",
+            "tab.audio",
+            "audio.record",
+            "audio.error.permission",
             "tab.files",
             "tab.secretSpace",
             "tab.settings",

@@ -11,3 +11,5 @@
 
 /* App name in Settings and other system locations */
 "CFBundleName" = "ZeroNet空间";
+
+"NSMicrophoneUsageDescription" = "使用麦克风录制音频备忘录，录音将加密保存在您的设备上。";

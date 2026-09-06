@@ -38,69 +38,66 @@ struct VideosView: View {
     // MARK: - Body
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                // 访客模式下始终显示空状态
-                if guestModeManager.isGuestMode || videos.isEmpty {
-                    emptyStateView
-                } else {
-                    videoListView
-                }
+        ZStack {
+            // 访客模式下始终显示空状态
+            if guestModeManager.isGuestMode || videos.isEmpty {
+                emptyStateView
+            } else {
+                videoListView
             }
-            .navigationTitle(String(localized: "videos.title"))
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    // 访客模式下隐藏导入按钮
-                    if guestModeManager.isOwnerMode {
-                        Button {
-                            showImportView = true
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.title3)
-                                .symbolRenderingMode(.hierarchical)
-                        }
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                // 访客模式下隐藏导入按钮
+                if guestModeManager.isOwnerMode {
+                    Button {
+                        showImportView = true
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title3)
+                            .symbolRenderingMode(.hierarchical)
                     }
                 }
             }
-            .sheet(isPresented: $showImportView) {
-                ImportButtonsView(onImportComplete: { items in
-                    print("✅ 导入完成: \(items.count) 个视频")
-                })
-                .environment(\.modelContext, modelContext)
-                .environmentObject(authViewModel)
+        }
+        .sheet(isPresented: $showImportView) {
+            ImportButtonsView(onImportComplete: { items in
+                print("✅ 导入完成: \(items.count) 个视频")
+            })
+            .environment(\.modelContext, modelContext)
+            .environmentObject(authViewModel)
+        }
+        .fullScreenCover(item: $selectedVideo) { video in
+            VideoPlayerView(video: video)
+        }
+        .alert(
+            String(localized: "video.delete.confirmTitle"),
+            isPresented: Binding(
+                get: { videoToDelete != nil },
+                set: { if !$0 { videoToDelete = nil } }
+            ),
+            presenting: videoToDelete
+        ) { video in
+            Button(String(localized: "common.delete"), role: .destructive) {
+                deleteVideo(video)
             }
-            .fullScreenCover(item: $selectedVideo) { video in
-                VideoPlayerView(video: video)
-            }
-            .alert(
-                String(localized: "video.delete.confirmTitle"),
-                isPresented: Binding(
-                    get: { videoToDelete != nil },
-                    set: { if !$0 { videoToDelete = nil } }
-                ),
-                presenting: videoToDelete
-            ) { video in
-                Button(String(localized: "common.delete"), role: .destructive) {
-                    deleteVideo(video)
-                }
-                Button(String(localized: "common.cancel"), role: .cancel) {}
-            } message: { _ in
-                Text(String(localized: "video.delete.confirmMessage"))
-            }
-            .alert(
-                String(localized: "common.error"),
-                isPresented: Binding(
-                    get: { deleteErrorMessage != nil },
-                    set: { if !$0 { deleteErrorMessage = nil } }
-                )
-            ) {
-                Button(String(localized: "common.ok"), role: .cancel) {}
-            } message: {
-                Text(deleteErrorMessage ?? "")
-            }
-            .task {
-                cleanupInvalidVideos()
-            }
+            Button(String(localized: "common.cancel"), role: .cancel) {}
+        } message: { _ in
+            Text(String(localized: "video.delete.confirmMessage"))
+        }
+        .alert(
+            String(localized: "common.error"),
+            isPresented: Binding(
+                get: { deleteErrorMessage != nil },
+                set: { if !$0 { deleteErrorMessage = nil } }
+            )
+        ) {
+            Button(String(localized: "common.ok"), role: .cancel) {}
+        } message: {
+            Text(deleteErrorMessage ?? "")
+        }
+        .task {
+            cleanupInvalidVideos()
         }
     }
 

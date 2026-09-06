@@ -11,3 +11,5 @@
 
 /* App name in Settings and other system locations */
 "CFBundleName" = "ZeroNet Space";
+
+"NSMicrophoneUsageDescription" = "Record audio memos and store them encrypted on this device.";

@@ -58,7 +58,11 @@ final class MediaItem {
     @Transient
     var type: MediaType {
         get {
-            MediaType(rawValue: typeRawValue) ?? .document
+            let storedType = MediaType(rawValue: typeRawValue) ?? .document
+            if storedType == .document && MediaType.from(fileExtension: fileExtension) == .audio {
+                return .audio
+            }
+            return storedType
         }
         set {
             typeRawValue = newValue.rawValue

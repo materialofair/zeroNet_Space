@@ -3,7 +3,7 @@
 //  ZeroNet-Space
 //
 //  主标签栏视图
-//  包含：相片、视频、文件、设置四个标签
+//  包含：相片、影音、文件、记事本、设置五个标签
 //
 
 import SwiftUI
@@ -29,13 +29,13 @@ struct MainTabView: View {
                 }
                 .tag(0)
 
-            // 视频标签
-            VideosView()
+            // 影音标签（合并视频与音频）
+            MediaView()
                 .environmentObject(authViewModel)
                 .tabItem {
                     Label(
-                        String(localized: "tab.videos"),
-                        systemImage: selectedTab == 1 ? "play.rectangle.fill" : "play.rectangle")
+                        String(localized: "tab.media"),
+                        systemImage: selectedTab == 1 ? "play.rectangle.on.rectangle.fill" : "play.rectangle.on.rectangle")
                 }
                 .tag(1)
 

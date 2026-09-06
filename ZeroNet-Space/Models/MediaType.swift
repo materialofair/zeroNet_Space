@@ -14,6 +14,7 @@ import UniformTypeIdentifiers
 enum MediaType: String, Codable, CaseIterable {
     case photo  // 照片（jpg, png, heic等）
     case video  // 视频（mp4, mov等）
+    case audio
     case document  // 文档（pdf, doc, txt等）
 
     // MARK: - Display Properties
@@ -25,6 +26,8 @@ enum MediaType: String, Codable, CaseIterable {
             return String(localized: "mediaType.photo")
         case .video:
             return String(localized: "mediaType.video")
+        case .audio:
+            return String(localized: "tab.audio")
         case .document:
             return String(localized: "mediaType.document")
         }
@@ -37,6 +40,8 @@ enum MediaType: String, Codable, CaseIterable {
             return "photo.fill"
         case .video:
             return "video.fill"
+        case .audio:
+            return "waveform"
         case .document:
             return "doc.fill"
         }
@@ -49,10 +54,16 @@ enum MediaType: String, Codable, CaseIterable {
             return .blue
         case .video:
             return .purple
+        case .audio:
+            return .red
         case .document:
             return .orange
         }
     }
+
+    static let supportedAudioFormats: Set<String> = [
+        "m4a", "mp3", "wav", "aiff", "aif", "aac", "caf", "flac", "mp4a"
+    ]
 
     // MARK: - File Extension Detection
 
@@ -72,6 +83,8 @@ enum MediaType: String, Codable, CaseIterable {
             return .video
         }
 
+        if supportedAudioFormats.contains(ext) { return .audio }
+
         // 其他文档
         return .document
     }
@@ -84,6 +97,8 @@ enum MediaType: String, Codable, CaseIterable {
             return .photo
         } else if utType.conforms(to: .movie) || utType.conforms(to: .video) {
             return .video
+        } else if utType.conforms(to: .audio) {
+            return .audio
         } else {
             return .document
         }
@@ -97,6 +112,8 @@ enum MediaType: String, Codable, CaseIterable {
             return .photo
         } else if mimeType.hasPrefix("video/") {
             return .video
+        } else if mimeType.hasPrefix("audio/") {
+            return .audio
         } else {
             return .document
         }
@@ -115,8 +132,11 @@ enum MediaType: String, Codable, CaseIterable {
             return AppConstants.supportedImageFormats.contains(ext)
         case .video:
             return AppConstants.supportedVideoFormats.contains(ext)
+        case .audio:
+            return Self.supportedAudioFormats.contains(ext)
         case .document:
-            return !AppConstants.supportedImageFormats.contains(ext)
+            return !Self.supportedAudioFormats.contains(ext)
+                && !AppConstants.supportedImageFormats.contains(ext)
                 && !AppConstants.supportedVideoFormats.contains(ext)
         }
     }
@@ -147,7 +167,7 @@ extension MediaType: Identifiable {
 extension MediaType: Comparable {
     static func < (lhs: MediaType, rhs: MediaType) -> Bool {
         // 排序顺序：照片 < 视频 < 文档
-        let order: [MediaType] = [.photo, .video, .document]
+        let order: [MediaType] = [.photo, .video, .audio, .document]
         guard let lhsIndex = order.firstIndex(of: lhs),
             let rhsIndex = order.firstIndex(of: rhs)
         else {

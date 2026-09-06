@@ -24,7 +24,9 @@ struct FilesView: View {
         sort: \MediaItem.createdAt,
         order: .reverse
     )
-    private var files: [MediaItem]
+    private var storedFiles: [MediaItem]
+
+    private var files: [MediaItem] { storedFiles.filter { $0.type != .audio } }
 
     // MARK: - State
 
