@@ -32,6 +32,9 @@ class ImportViewModel: ObservableObject {
     /// 是否显示文件选择器
     @Published var showFilePicker: Bool = false
 
+    /// 是否显示音频选择器
+    @Published var showAudioPicker: Bool = false
+
     /// 导入成功的数量
     @Published var importedCount: Int = 0
 
@@ -191,6 +194,11 @@ class ImportViewModel: ObservableObject {
     /// 显示文件选择器
     func selectFiles() {
         showFilePicker = true
+    }
+
+    /// 显示音频选择器
+    func selectAudio() {
+        showAudioPicker = true
     }
 
     /// 取消导入

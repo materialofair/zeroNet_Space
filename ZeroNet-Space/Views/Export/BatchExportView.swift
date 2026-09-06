@@ -205,6 +205,13 @@ struct BatchExportView: View {
         // 获取选中的媒体项
         let itemsToExport = allItems.filter { selectedItems.contains($0.id) }
 
+        // 包含录音/音频文件时需要 VIP 才能导出/分享
+        if itemsToExport.contains(where: { $0.type == .audio }) && !AppSettings.shared.isVIP {
+            errorMessage = String(localized: "audio.share.vipRequired.message")
+            showError = true
+            return
+        }
+
         // 开始导出
         isExporting = true
         exportTotalCount = itemsToExport.count

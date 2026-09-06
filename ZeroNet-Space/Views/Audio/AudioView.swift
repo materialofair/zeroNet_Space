@@ -13,12 +13,19 @@ struct AudioView: View {
     }, sort: \MediaItem.createdAt, order: .reverse)
     private var candidates: [MediaItem]
 
-    @StateObject private var audio = AudioSessionController()
-    @State private var showImporter = false
-    @State private var isImporting = false
+    struct ShareAudioItem: Identifiable {
+        let id = UUID()
+        let url: URL
+    }
+
+    @ObservedObject private var audio = AudioSessionController.shared
+    @State private var showImportView = false
     @State private var isSaving = false
-    @State private var importTask: Task<Void, Never>?
+    @State private var isSharing = false
     @State private var saveTask: Task<Void, Never>?
+    @State private var shareTask: Task<Void, Never>?
+    @State private var shareAudioItem: ShareAudioItem?
+    @State private var showVIPRequiredAlert = false
     @State private var renameItem: MediaItem?
     @State private var newName = ""
     @State private var deleteItem: MediaItem?
@@ -31,7 +38,7 @@ struct AudioView: View {
     }
 
     private var canAccess: Bool { auth.isAuthenticated && guest.isOwnerMode }
-    private var busy: Bool { isImporting || isSaving || audio.isRequestingPermission }
+    private var busy: Bool { isSaving || isSharing || audio.isRequestingPermission }
 
     var body: some View {
         Group {
@@ -49,13 +56,15 @@ struct AudioView: View {
             }
         }
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .navigationBarTrailing) {
                 if guest.isOwnerMode {
                     Button {
                         audio.stopPlayback()
-                        showImporter = true
+                        showImportView = true
                     } label: {
-                        Label(String(localized: "audio.import"), systemImage: "square.and.arrow.down")
+                        Image(systemName: "plus.circle.fill")
+                            .font(.title3)
+                            .symbolRenderingMode(.hierarchical)
                     }
                     .disabled(busy || audio.hasRecording)
                     .accessibilityIdentifier("audio.import")
@@ -66,17 +75,18 @@ struct AudioView: View {
             if guest.isOwnerMode { recordingPanel }
         }
         .overlay {
-            if isImporting || isSaving {
-                ProgressView(String(localized: "audio.saving"))
+            if isSaving || isSharing {
+                ProgressView(String(localized: isSharing ? "export.preparingShare" : "audio.saving"))
                     .padding(24)
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
             }
         }
-        .fileImporter(isPresented: $showImporter, allowedContentTypes: [.audio], allowsMultipleSelection: true) { result in
-            switch result {
-            case .success(let urls): importFiles(urls)
-            case .failure: errorMessage = String(localized: "audio.error.import")
-            }
+        .sheet(isPresented: $showImportView) {
+            ImportButtonsView(onImportComplete: { items in
+                print("✅ 导入完成: \(items.count) 个项目")
+            })
+            .environment(\.modelContext, modelContext)
+            .environmentObject(auth)
         }
         .alert(String(localized: "audio.rename"), isPresented: Binding(
             get: { renameItem != nil }, set: { if !$0 { renameItem = nil } })
@@ -105,6 +115,21 @@ struct AudioView: View {
                 audio.errorMessage = nil
             }
         } message: { Text(errorMessage ?? audio.errorMessage ?? "") }
+        .alert(
+            String(localized: "audio.share.vipRequired.title"),
+            isPresented: $showVIPRequiredAlert
+        ) {
+            Button(String(localized: "common.ok"), role: .cancel) {}
+        } message: {
+            Text(String(localized: "audio.share.vipRequired.message"))
+        }
+        .sheet(item: $shareAudioItem) { item in
+            ShareSheet(items: [item.url])
+                .onDisappear {
+                    let parentDir = item.url.deletingLastPathComponent()
+                    try? FileManager.default.removeItem(at: parentDir)
+                }
+        }
         .onReceive(timer) { _ in audio.tick() }
         .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.interruptionNotification)) { notification in
             if notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt == AVAudioSession.InterruptionType.began.rawValue {
@@ -117,8 +142,17 @@ struct AudioView: View {
             }
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .inactive { audio.pauseForInterruption() }
-            if phase == .background { leaveAudio() }
+            if phase == .inactive {
+                if !audio.isRecording { audio.pauseForInterruption() }
+            }
+            if phase == .background {
+                if !audio.isRecording {
+                    audio.stopPlayback()
+                }
+            }
+            if phase == .active {
+                audio.tick()
+            }
         }
         .onChange(of: auth.isAuthenticated) { _, authenticated in
             if !authenticated { revokeAccess() }
@@ -126,7 +160,13 @@ struct AudioView: View {
         .onChange(of: guest.isOwnerMode) { _, owner in
             if !owner { revokeAccess() }
         }
-        .onDisappear { leaveAudio() }
+        .onDisappear {
+            if !audio.hasRecording {
+                leaveAudio()
+            } else {
+                audio.stopPlayback()
+            }
+        }
     }
 
     private func audioRow(_ item: MediaItem) -> some View {
@@ -151,6 +191,16 @@ struct AudioView: View {
                 Spacer()
                 Text(item.formattedDuration ?? item.formattedFileSize)
                     .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                Button {
+                    shareAudio(item)
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 16))
+                        .foregroundStyle(.tint)
+                }
+                .buttonStyle(.borderless)
+                .disabled(busy || audio.hasRecording)
+                .accessibilityLabel(String(localized: "common.share"))
             }
             if audio.playingID == item.id {
                 if audio.isLoading {
@@ -171,18 +221,31 @@ struct AudioView: View {
         }
         .padding(.vertical, 8)
         .contextMenu {
+            Button {
+                shareAudio(item)
+            } label: {
+                Label(String(localized: "common.share"), systemImage: "square.and.arrow.up")
+            }
             Button(String(localized: "audio.rename"), systemImage: "pencil") {
                 newName = item.fileName
                 renameItem = item
             }
             Button(String(localized: "common.delete"), systemImage: "trash", role: .destructive) { deleteItem = item }
         }
-        .swipeActions {
+        .swipeActions(edge: .trailing) {
             Button(String(localized: "common.delete"), role: .destructive) { deleteItem = item }
             Button(String(localized: "audio.rename")) { newName = item.fileName; renameItem = item }
                 .tint(.blue)
         }
-        .disabled(isImporting || isSaving)
+        .swipeActions(edge: .leading) {
+            Button {
+                shareAudio(item)
+            } label: {
+                Label(String(localized: "common.share"), systemImage: "square.and.arrow.up")
+            }
+            .tint(.blue)
+        }
+        .disabled(busy)
     }
 
     private var recordingPanel: some View {
@@ -268,30 +331,6 @@ struct AudioView: View {
         }
     }
 
-    private func importFiles(_ urls: [URL]) {
-        guard canAccess, !busy, !audio.hasRecording, !urls.isEmpty,
-            let password = auth.sessionPassword, hasCapacity(for: urls.count)
-        else { return }
-        isImporting = true
-        importTask = Task {
-            defer { isImporting = false }
-            var failed = 0
-            for url in urls {
-                guard !Task.isCancelled, canAccess else { return }
-                let accessed = url.startAccessingSecurityScopedResource()
-                defer { if accessed { url.stopAccessingSecurityScopedResource() } }
-                do {
-                    let item = try await AudioImportService.importFile(url: url, password: password)
-                    try persist(item)
-                } catch is CancellationError { return }
-                catch { failed += 1 }
-            }
-            if failed > 0 {
-                errorMessage = String(format: String(localized: "audio.error.importCount"), failed, urls.count)
-            }
-        }
-    }
-
     private func saveRecording() {
         guard !isSaving, canAccess, let password = auth.sessionPassword,
             let url = audio.finishRecording()
@@ -324,17 +363,52 @@ struct AudioView: View {
         }
     }
 
+    private func shareAudio(_ item: MediaItem) {
+        guard canAccess, !busy, let password = auth.sessionPassword else { return }
+
+        // 分享录音前严格检查 VIP 会员权限
+        guard AppSettings.shared.isVIP else {
+            showVIPRequiredAlert = true
+            return
+        }
+
+        isSharing = true
+        shareTask = Task {
+            defer { isSharing = false }
+            do {
+                let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(
+                    "shared_audio_\(UUID().uuidString)", isDirectory: true)
+                try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+                let name = item.fileName.hasSuffix(item.fileExtension) ? item.fileName : item.fullFileName
+                let shareURL = tempDir.appendingPathComponent(name)
+                let sourceURL = FileStorageService.shared.getFileURL(for: item.encryptedPath)
+                try EncryptionService.shared.decryptFile(inputURL: sourceURL, to: shareURL, password: password)
+                try FileManager.default.setAttributes(
+                    [.protectionKey: FileProtectionType.complete],
+                    ofItemAtPath: shareURL.path)
+
+                guard !Task.isCancelled else {
+                    try? FileManager.default.removeItem(at: tempDir)
+                    return
+                }
+                shareAudioItem = ShareAudioItem(url: shareURL)
+            } catch {
+                errorMessage = String(localized: "export.failed")
+            }
+        }
+    }
+
     private func leaveAudio() {
         audio.stopPlayback()
-        importTask?.cancel()
         if canAccess, audio.hasRecording { saveRecording() }
         else if !isSaving { audio.discardRecording() }
     }
 
     private func revokeAccess() {
-        showImporter = false
-        importTask?.cancel()
+        showImportView = false
         saveTask?.cancel()
+        shareTask?.cancel()
+        shareAudioItem = nil
         audio.stopPlayback()
         if !isSaving { audio.discardRecording() }
     }

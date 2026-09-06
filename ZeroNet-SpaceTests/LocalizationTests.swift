@@ -139,6 +139,11 @@ class LocalizationTests: XCTestCase {
             "settings.title",
             "export.title",
             "import.title",
+            "audio.share.vipRequired.title",
+            "audio.share.vipRequired.message",
+            "import.fromAudio.title",
+            "import.fromAudio.subtitle",
+            "import.formats.audio",
         ]
 
         for key in requiredKeys {

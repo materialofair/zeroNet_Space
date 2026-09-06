@@ -73,6 +73,15 @@ struct ImportButtonsView: View {
                     viewModel.importFromFiles(urls: urls)
                 }
             }
+            .sheet(isPresented: $viewModel.showAudioPicker) {
+                DocumentPickerRepresentable(
+                    isPresented: $viewModel.showAudioPicker,
+                    contentTypes: [.audio],
+                    allowsMultipleSelection: true
+                ) { urls in
+                    viewModel.importFromFiles(urls: urls)
+                }
+            }
             .sheet(isPresented: $viewModel.showEncryptedPasswordInput) {
                 if let pendingFile = viewModel.pendingEncryptedFile {
                     EncryptedFilePasswordInputView(
@@ -176,22 +185,12 @@ struct ImportButtonsView: View {
 
     private var importOptionsView: some View {
         VStack(spacing: 20) {
-            // 标题说明
-            VStack(spacing: 12) {
-                Image(systemName: "square.and.arrow.down")
-                    .font(.system(size: 60))
-                    .foregroundColor(.blue)
-
-                Text(String(localized: "import.selectMethod.title"))
-                    .font(.title2)
-                    .fontWeight(.semibold)
-
-                Text(String(localized: "import.selectMethod.subtitle"))
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(.top, 40)
+            // 提示说明
+            Text(String(localized: "import.selectMethod.subtitle"))
+                .font(.subheadline)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.top, 16)
 
             // Import limit banner
             if !viewModel.appSettings.hasUnlockedUnlimited {
@@ -220,6 +219,16 @@ struct ImportButtonsView: View {
                     color: .orange
                 ) {
                     viewModel.selectFiles()
+                }
+
+                // 导入音频
+                ImportOptionButton(
+                    icon: "waveform",
+                    title: String(localized: "import.fromAudio.title"),
+                    subtitle: String(localized: "import.fromAudio.subtitle"),
+                    color: .purple
+                ) {
+                    viewModel.selectAudio()
                 }
             }
             .padding(.horizontal)
@@ -250,6 +259,7 @@ struct ImportButtonsView: View {
 
                 Text(String(localized: "import.formats.photos"))
                 Text(String(localized: "import.formats.videos"))
+                Text(String(localized: "import.formats.audio"))
                 Text(String(localized: "import.formats.documents"))
 
                 Divider()

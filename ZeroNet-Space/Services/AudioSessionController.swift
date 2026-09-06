@@ -4,6 +4,8 @@ import Foundation
 
 @MainActor
 final class AudioSessionController: NSObject, ObservableObject, AVAudioRecorderDelegate {
+    static let shared = AudioSessionController()
+
     @Published private(set) var hasRecording = false
     @Published private(set) var isRecording = false
     @Published private(set) var canResume = false
@@ -54,11 +56,11 @@ final class AudioSessionController: NSObject, ObservableObject, AVAudioRecorderD
             do {
                 try FileManager.default.createDirectory(
                     at: directory, withIntermediateDirectories: true,
-                    attributes: [.protectionKey: FileProtectionType.complete])
+                    attributes: [.protectionKey: FileProtectionType.completeUnlessOpen])
                 let url = directory.appendingPathComponent(UUID().uuidString + ".m4a")
                 recordingURL = url
                 let session = AVAudioSession.sharedInstance()
-                try session.setCategory(.record, mode: .default)
+                try session.setCategory(.record, mode: .default, options: [.allowBluetooth])
                 try session.setActive(true)
                 let recorder = try AVAudioRecorder(url: url, settings: [
                     AVFormatIDKey: kAudioFormatMPEG4AAC,
@@ -71,7 +73,7 @@ final class AudioSessionController: NSObject, ObservableObject, AVAudioRecorderD
                 recorder.isMeteringEnabled = true
                 guard recorder.prepareToRecord() else { throw ImportError.saveFailed }
                 try FileManager.default.setAttributes(
-                    [.protectionKey: FileProtectionType.complete], ofItemAtPath: url.path)
+                    [.protectionKey: FileProtectionType.completeUnlessOpen], ofItemAtPath: url.path)
                 guard recorder.record() else { throw ImportError.saveFailed }
                 elapsed = 0
                 levels = Array(repeating: 0, count: 40)

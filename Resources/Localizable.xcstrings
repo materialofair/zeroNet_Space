@@ -18,6 +18,40 @@
         }
       }
     },
+    "audio.share.vipRequired.title" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "VIP Required"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要 VIP 会员"
+          }
+        }
+      }
+    },
+    "audio.share.vipRequired.message" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sharing audio recordings is a VIP exclusive feature. Please unlock VIP in Settings to share recordings."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "录音分享为 VIP 会员专享功能。请在“设置”中升级解锁 VIP 后使用。"
+          }
+        }
+      }
+    },
     "tab.audio" : {
       "extractionState": "manual",
       "localizations": {
@@ -4617,6 +4651,23 @@
         }
       }
     },
+    "import.formats.audio" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "• Audio: MP3, M4A, WAV, FLAC, etc."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "• 音频: MP3, M4A, WAV, FLAC 等"
+          }
+        }
+      }
+    },
     "import.formats.photos" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -4664,6 +4715,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "• 视频: MP4, MOV, M4V 等"
+          }
+        }
+      }
+    },
+    "import.fromAudio.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select music and voice memos"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择音乐与录音文件"
+          }
+        }
+      }
+    },
+    "import.fromAudio.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From Audio"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从音频导入"
           }
         }
       }

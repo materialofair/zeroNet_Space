@@ -116,6 +116,7 @@ struct Private_AlbumApp: App {
                     lastBackgroundedAt = Date()
                 case .active:
                     autoLockIfNeeded()
+                    AudioSessionController.shared.tick()
                 default:
                     break
                 }
@@ -131,6 +132,9 @@ struct Private_AlbumApp: App {
     /// （如下拉通知中心、来电）不触发锁定，但隐私遮罩仍会覆盖
     private func autoLockIfNeeded() {
         defer { lastBackgroundedAt = nil }
+
+        // 正在录音或存在未保存录音时，不执行自动锁定，确保长时间后台录音稳定不被销毁
+        guard !AudioSessionController.shared.hasRecording else { return }
 
         guard authViewModel.isAuthenticated,
             let backgroundedAt = lastBackgroundedAt

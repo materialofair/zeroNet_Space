@@ -88,6 +88,12 @@ class AppSettings: ObservableObject {
         }
     }
 
+    /// VIP 会员状态（已解锁无限导入与高级功能）
+    var isVIP: Bool {
+        get { hasUnlockedUnlimited }
+        set { hasUnlockedUnlimited = newValue }
+    }
+
     /// 访客模式是否启用
     @Published var guestModeEnabled: Bool {
         didSet {

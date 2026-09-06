@@ -94,6 +94,37 @@ final class AudioServiceTests: XCTestCase {
         XCTAssertNil(controller.playingID)
     }
 
+    func testAudioSharingVIPRestriction() async throws {
+        let previousVIP = AppSettings.shared.isVIP
+        defer { AppSettings.shared.isVIP = previousVIP }
+
+        let url = try makeAudioFile()
+        defer { try? FileManager.default.removeItem(at: url) }
+        let originalData = try Data(contentsOf: url)
+        let item = try await AudioImportService.importFile(url: url, password: "vip-test-password")
+        defer { try? FileStorageService.shared.deleteFile(path: item.encryptedPath) }
+
+        // 1. 非 VIP 会员禁止分享录音
+        AppSettings.shared.isVIP = false
+        XCTAssertFalse(AppSettings.shared.isVIP)
+
+        // 2. VIP 会员允许解密并导出分享
+        AppSettings.shared.isVIP = true
+        XCTAssertTrue(AppSettings.shared.isVIP)
+
+        let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "test_share_\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let shareURL = tempDir.appendingPathComponent(item.fullFileName)
+        let sourceURL = FileStorageService.shared.getFileURL(for: item.encryptedPath)
+        try EncryptionService.shared.decryptFile(inputURL: sourceURL, to: shareURL, password: "vip-test-password")
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: shareURL.path))
+        XCTAssertEqual(try Data(contentsOf: shareURL), originalData)
+    }
+
     private func makeAudioFile() throws -> URL {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".wav")
         let format = try XCTUnwrap(AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1))
