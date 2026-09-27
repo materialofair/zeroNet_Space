@@ -1,10 +1,18 @@
 # 零网络空间 / ZeroNet Space
 
+> **Official website / 官方网站:** [English](https://zeronet-space.materialofair.chatgpt.site/) · [中文](https://zeronet-space.materialofair.chatgpt.site/zh/) · [App Store](https://apps.apple.com/app/id6755504480)
+>
+> Keep photos, videos, documents, notes and recordings in a local encrypted vault on iPhone and iPad. No account or automatic cloud upload. Free allowance: 75 media/file items; optional one-time VIP purchase. Apple purchases and restoration require network access.
+>
+> 本地加密保存照片、视频、文档、笔记与录音。免费媒体和文件额度为 75 项，可选一次性 VIP。不会自动同步云端；购买与恢复购买需要 Apple 网络服务。重要内容请另存副本。
+>
+> [Product facts](https://zeronet-space.materialofair.chatgpt.site/product/) · [照片保存指南](https://zeronet-space.materialofair.chatgpt.site/zh/guides/offline-photo-vault-iphone/) · [文件与笔记](https://zeronet-space.materialofair.chatgpt.site/zh/guides/private-files-notes-iphone/) · [录音指南](https://zeronet-space.materialofair.chatgpt.site/zh/guides/encrypted-voice-memos-iphone/)
+
 <div align="center">
 
-**真正的离线隐私空间 | 100%开源 | 零网络 | 零追踪**
+**本地加密隐私空间 | 开源 | 无需账号 | 不自动上传云端**
 
-[![Platform](https://img.shields.io/badge/Platform-iOS%2017.0+-lightgrey.svg)](https://www.apple.com/ios/)
+[![Platform](https://img.shields.io/badge/Platform-iOS%2017.6+-lightgrey.svg)](https://www.apple.com/ios/)
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)](https://swift.org)
 [![SwiftUI](https://img.shields.io/badge/SwiftUI-3.0-blue.svg)](https://developer.apple.com/xcode/swiftui/)
 [![Security](https://img.shields.io/badge/Security-AES--256--GCM-green.svg)](https://en.wikipedia.org/wiki/Galois/Counter_Mode)
@@ -22,7 +30,7 @@
 ZeroNet Space is a **fully open-source** iOS privacy protection app.
 
 **Our Promises**:
-- ✅ **Zero Network**: Code-level network blocking
+- ✅ **Local content**: Personal content stays on-device without automatic cloud sync; Apple purchases and restoration use the network
 - ✅ **Zero Tracking**: No SDK, ads, analytics, or cloud backup
 - ✅ **Zero Account**: No registration, login, or data collection
 - ✅ **Local Encryption**: AES-256-GCM with PBKDF2 key derivation
@@ -44,7 +52,7 @@ I chose open source so anyone can inspect the code and confirm we actually deliv
 **Open source is not about being free, it's about being transparent.**
 
 You can:
-- 📖 Review all source code to verify "truly no network code"
+- 📖 Review content storage and the separate Apple purchase integration
 - 🔍 Inspect encryption implementation to ensure data security
 - 🛡️ Audit privacy protection mechanisms
 - 🧪 Compile and run yourself, have complete control
@@ -115,10 +123,10 @@ For detailed trademark usage guidelines, see [TRADEMARK.md](TRADEMARK.md).
 - ✅ Disguise interface
 - ✅ Dark mode
 - ✅ All core security features
-- ⚠️ **File limit: Up to 75 files**
+- ⚠️ **Free media/file allowance: 75 items**
 
-**Pro Version ($2.99 one-time)**:
-- 🔓 **Unlimited file storage**
+**VIP (one-time purchase; regional price shown in the App Store)**:
+- 🔓 **No import cap; available device storage still applies**
 - 🔓 **Guest Mode** (dual password system)
 - 💰 **Lifetime access, no subscription**
 
@@ -174,8 +182,8 @@ Memory Safety: Immediate key erasure after use
 
 #### Network Isolation Verification
 ```
-Network Permission: ❌ Not requested
-Network Code: ❌ Does not exist (verify in source)
+Content storage: Local; no automatic cloud upload
+Purchases/restoration: Apple StoreKit network services
 Third-party SDK: ❌ Zero dependencies
 Cloud Service: ❌ Completely local
 Analytics Tracking: ❌ Zero collection
@@ -185,7 +193,7 @@ Privacy Manifest: ✅ Provided (PrivacyInfo.xcprivacy)
 **Verification Methods**:
 - 🔍 View source code - Search for `URLSession`, `Alamofire`, `network requests`
 - 📄 Check `PrivacyInfo.xcprivacy` - Privacy manifest file
-- 🛠️ Runtime monitoring - Use Charles/Wireshark to verify zero traffic
+- 🛠️ Runtime monitoring - Distinguish local content processing from Apple purchase traffic
 
 ---
 
@@ -197,7 +205,7 @@ Privacy Manifest: ✅ Provided (PrivacyInfo.xcprivacy)
 - **Data Storage**: SwiftData + FileManager
 - **Encryption**: CryptoKit (AES-256-GCM)
 - **Password Management**: iOS Keychain + PBKDF2
-- **Minimum Support**: iOS 17.0+
+- **Minimum Support**: iOS 17.6+
 
 #### Compatible Devices
 - ✅ iPhone XS and newer (iPhone XS, XS Max, XR, 11, 12, 13, 14, 15, 16)
@@ -302,7 +310,7 @@ For detailed license terms, see LICENSE file.
 
 #### Privacy Promise
 
-- ✅ We will **NEVER** add network features
+- ✅ We keep personal content local; Apple purchases are a separate network service
 - ✅ We will **NEVER** collect user data
 - ✅ We will **NEVER** add tracking or analytics
 - ✅ We will **NEVER** add ads
@@ -320,11 +328,11 @@ For detailed license terms, see LICENSE file.
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/YourUsername/ZeroNetSpace.git
-cd ZeroNetSpace
+git clone https://github.com/materialofair/zeroNet_Space.git
+cd zeroNet_Space
 
 # 2. Open with Xcode
-open ZeroNetSpace.xcodeproj
+open ZeroNet-Space.xcodeproj
 
 # 3. Select your development team (requires Apple ID)
 # 4. Select device or simulator
@@ -340,7 +348,7 @@ open ZeroNetSpace.xcodeproj
 
 ### 📊 Project Status
 
-- **Current Version**: V1.2
+- **Current App Store version**: See the [live listing](https://apps.apple.com/app/id6755504480)
 - **Development Status**: ✅ Stable maintenance
 - **Last Update**: 2025-01-17
 - **Open Source Date**: 2025-01-18
@@ -407,10 +415,10 @@ open ZeroNetSpace.xcodeproj
 零网络空间是一款**完全开源**的iOS隐私保护应用。
 
 **我们承诺**：
-- ✅ **零网络**：代码级阻断所有网络请求
+- ✅ **本地内容**：个人内容在设备上保存，不自动同步云端；Apple 购买与恢复购买使用网络
 - ✅ **零追踪**：不含任何SDK、广告、统计、云备份
 - ✅ **零账号**：不注册、不登录、不收集隐私数据
-- ✅ **本地加密**：AES-256-GCM军用级加密，密钥仅存本地Keychain
+- ✅ **本地加密**：AES-256-GCM 加密，密钥仅存本地Keychain
 - ✅ **100%开源**：所有代码公开透明，接受社区审查
 
 **核心理念**：你的数据应该只属于你自己，不应该被上传、分析或追踪。
@@ -429,7 +437,7 @@ open ZeroNetSpace.xcodeproj
 **开源不是为了免费，而是为了透明。**
 
 你可以：
-- 📖 查看所有源代码，验证"真的没有网络代码"
+- 📖 查看内容存储代码与独立的 Apple 购买集成
 - 🔍 检查加密实现，确认数据安全
 - 🛡️ 审查隐私保护机制
 - 🧪 自己编译运行，完全掌控
@@ -500,10 +508,10 @@ open ZeroNetSpace.xcodeproj
 - ✅ 伪装界面
 - ✅ 深色模式
 - ✅ 所有核心安全功能
-- ⚠️ **文件数量限制：最多75个文件**
+- ⚠️ **免费媒体与文件额度：75 项**
 
-**Pro版（$3.99一次性买断）**：
-- 🔓 **无限文件存储**
+**VIP（一次性购买，地区价格以 App Store 为准）**：
+- 🔓 **解除导入数量上限，仍受设备可用空间限制**
 - 🔓 **访客模式**（双密码体系）
 - 💰 **永久使用，无订阅**
 
@@ -559,8 +567,8 @@ IV: 12字节随机（每次加密唯一）
 
 #### 网络隔离验证
 ```
-网络权限: ❌ 未请求
-网络代码: ❌ 不存在（可查看源码验证）
+内容存储: 本地，不自动上传云端
+购买与恢复购买: Apple StoreKit 网络服务
 第三方SDK: ❌ 零依赖
 云服务: ❌ 完全本地
 统计追踪: ❌ 零收集
@@ -570,7 +578,7 @@ IV: 12字节随机（每次加密唯一）
 **验证方式**：
 - 🔍 查看源代码 - 搜索 `URLSession`、`Alamofire`、`网络请求`
 - 📄 检查 `PrivacyInfo.xcprivacy` - 隐私清单文件
-- 🛠️ 运行时监控 - 使用Charles/Wireshark验证零网络流量
+- 🛠️ 运行时监控 - 区分本地内容处理和 Apple 购买服务流量
 
 ---
 
@@ -582,7 +590,7 @@ IV: 12字节随机（每次加密唯一）
 - **数据存储**: SwiftData + FileManager
 - **加密算法**: CryptoKit (AES-256-GCM)
 - **密码管理**: iOS Keychain + PBKDF2
-- **最低支持**: iOS 17.0+
+- **最低支持**: iOS 17.6+
 
 #### 兼容设备
 - ✅ iPhone XS 及以上（iPhone XS, XS Max, XR, 11, 12, 13, 14, 15, 16）
@@ -687,7 +695,7 @@ IV: 12字节随机（每次加密唯一）
 
 #### 隐私承诺
 
-- ✅ 我们**永远不会**添加网络功能
+- ✅ 我们保持个人内容本地处理；Apple 购买是独立的网络服务
 - ✅ 我们**永远不会**收集用户数据
 - ✅ 我们**永远不会**添加追踪或统计
 - ✅ 我们**永远不会**添加广告
@@ -705,11 +713,11 @@ IV: 12字节随机（每次加密唯一）
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/你的用户名/ZeroNetSpace.git
-cd ZeroNetSpace
+git clone https://github.com/materialofair/zeroNet_Space.git
+cd zeroNet_Space
 
 # 2. 使用Xcode打开
-open ZeroNetSpace.xcodeproj
+open ZeroNet-Space.xcodeproj
 
 # 3. 选择你的开发团队（需要Apple ID）
 # 4. 选择真机或模拟器
@@ -725,7 +733,7 @@ open ZeroNetSpace.xcodeproj
 
 ### 📊 项目状态
 
-- **当前版本**: V1.2
+- **当前 App Store 版本**: 以[商店页面](https://apps.apple.com/app/id6755504480)为准
 - **开发状态**: ✅ 稳定维护中
 - **最后更新**: 2025-01-17
 - **开源日期**: 2025-01-18
