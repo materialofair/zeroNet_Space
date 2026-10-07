@@ -1,0 +1,4 @@
+"CFBundleDisplayName" = "ZeroNet Space";
+"CFBundleName" = "ZeroNet Space";
+"NSMicrophoneUsageDescription" = "Nagrywaj notatki głosowe i przechowuj je zaszyfrowane na tym urządzeniu.";
+"NSPhotoLibraryUsageDescription" = "Dostęp do biblioteki zdjęć pozwala szyfrować zdjęcia i filmy w prywatnej przestrzeni na tym urządzeniu. Twoje treści pozostają na urządzeniu, bez przesyłania i śledzenia.";

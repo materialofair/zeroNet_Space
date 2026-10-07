@@ -1,0 +1,4 @@
+"CFBundleDisplayName" = "ZeroNet Space";
+"CFBundleName" = "ZeroNet Space";
+"NSMicrophoneUsageDescription" = "Rekam memo audio dan simpan dalam bentuk terenkripsi di perangkat ini.";
+"NSPhotoLibraryUsageDescription" = "Akses perpustakaan foto untuk mengenkripsi foto dan video di ruang pribadi pada perangkat ini. Konten Anda tetap berada di perangkat, tanpa unggahan atau pelacakan.";

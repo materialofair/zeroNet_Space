@@ -142,6 +142,7 @@ final class AudioSessionController: NSObject, ObservableObject, AVAudioRecorderD
 
     func togglePlayback(item: MediaItem, password: String) {
         guard !hasRecording, !isRequestingPermission else { return }
+        guard playingID != item.id || !isLoading else { return }
         if playingID == item.id, let player {
             if player.isPlaying {
                 player.pause()

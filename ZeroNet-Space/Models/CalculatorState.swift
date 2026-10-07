@@ -17,6 +17,11 @@ struct CalculatorState {
     var shouldResetDisplay: Bool = false
     var inputHistory: [String] = []  // 仅用于密码检测，不显示给用户
 
+    /// Present the canonical decimal value without changing parser/password syntax.
+    func localizedDisplayValue(locale: Locale = .current) -> String {
+        displayValue.replacingOccurrences(of: ".", with: locale.decimalSeparator ?? ".")
+    }
+
     /// 计算运算符
     enum Operation: String {
         case add = "+"
@@ -64,6 +69,11 @@ enum CalculatorButton: Hashable {
         case .percent: return "%"
         case .decimal: return "."
         }
+    }
+
+    /// The decimal action still records a canonical dot; only its visible label varies.
+    func localizedTitle(locale: Locale = .current) -> String {
+        self == .decimal ? (locale.decimalSeparator ?? ".") : title
     }
 
     var backgroundColor: Color {

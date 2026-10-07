@@ -3,6 +3,36 @@
 本项目遵循 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 规范。
 版本格式：`主版本.次版本.修订号`；`[未发布]` 区块记录尚未提交 App Store 的改动。
 
+## [1.3.6] - 2026-09-22
+
+### 新增
+
+- 应用图标选择加入现有 VIP 权益，提供纸页、计算器、山石、尺规四款专属图标（含默认图标共五款），支持免费恢复默认
+- 重新设计默认青环图标与应用内预览
+
+### 改进
+
+- 图标选择页改为紧凑列表，缩小预览并精简 VIP 区域
+- 启动页与登录页统一青环视觉，启动页适配浅色和深色外观
+
+- 移除录音列表右滑分享，保留分享按钮；播放期间禁用列表滑动，播放器展开的行在暂停后仍禁用滑动
+- 音频加载时显示加载状态并阻止重复点击播放
+- 录音分享改用后台解密，支持取消分享准备并清理临时文件
+- 录音保存失败后明确提示内容已保留，提供重试与丢弃操作
+
+## [1.3.5] - 2026-09-06
+
+### 新增
+
+- **语音备忘录与录音功能**：新增录音及音频播放管理，支持长时间后台与锁屏录音保活
+- **统一导入入口**：相册、文件、音频统一至导入弹框，操作更加直观便捷
+- **录音分享权限控制**：新增 VIP 会员分享与导出保护限制
+
+### 改进
+
+- **底栏标签精简**：影音合并至统一标签页，记事本与设置设为独立 Tab
+- **导入交互优化**：简化导入弹框界面布局，突出安全加密提示
+
 ## [1.3.0] - 2026-08-16
 
 ### 新增
@@ -104,6 +134,8 @@
 - 100% 开源
 
 [未发布]: https://github.com/materialofair/zeroNet_Space
+[1.3.6]: https://github.com/materialofair/zeroNet_Space/releases/tag/v1.3.6
+[1.3.5]: https://github.com/materialofair/zeroNet_Space/releases/tag/v1.3.5
 [1.3.0]: https://github.com/materialofair/zeroNet_Space/releases/tag/v1.3.0
 [1.2.0]: https://github.com/materialofair/zeroNet_Space/releases/tag/v1.2.0
 [1.1.0]: https://github.com/materialofair/zeroNet_Space/releases/tag/v1.1.0

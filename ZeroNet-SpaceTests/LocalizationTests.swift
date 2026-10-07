@@ -97,6 +97,11 @@ class LocalizationTests: XCTestCase {
             "Logout button should be localized")
     }
 
+    func testAppVersion() throws {
+        print("🔍 AppConstants.appVersion = \(AppConstants.appVersion)")
+        XCTAssertEqual(AppConstants.appVersion, "1.3.6")
+    }
+
     // MARK: - Chinese Locale Tests
 
     func testChineseLocalization() throws {

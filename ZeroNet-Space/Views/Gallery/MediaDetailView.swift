@@ -600,7 +600,7 @@ struct MediaDetailView: View {
             } catch {
                 await MainActor.run {
                     modelContext.rollback()
-                    errorMessage = "删除失败: \(error.localizedDescription)"
+                    errorMessage = String(format: String(localized: "media.error.deleteFailed"), error.localizedDescription)
                 }
                 print("❌ 删除失败: \(error)")
             }

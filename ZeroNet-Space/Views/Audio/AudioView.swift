@@ -22,6 +22,8 @@ struct AudioView: View {
     @State private var showImportView = false
     @State private var isSaving = false
     @State private var isSharing = false
+    @State private var saveFailed = false
+    @State private var shareRequestID: UUID?
     @State private var saveTask: Task<Void, Never>?
     @State private var shareTask: Task<Void, Never>?
     @State private var shareAudioItem: ShareAudioItem?
@@ -76,9 +78,14 @@ struct AudioView: View {
         }
         .overlay {
             if isSaving || isSharing {
-                ProgressView(String(localized: isSharing ? "export.preparingShare" : "audio.saving"))
-                    .padding(24)
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                VStack(spacing: 16) {
+                    ProgressView(String(localized: isSharing ? "export.preparingShare" : "audio.saving"))
+                    if isSharing {
+                        Button(String(localized: "common.cancel")) { cancelSharing() }
+                    }
+                }
+                .padding(24)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
             }
         }
         .sheet(isPresented: $showImportView) {
@@ -176,12 +183,19 @@ struct AudioView: View {
                     guard canAccess, let password = auth.sessionPassword else { return }
                     audio.togglePlayback(item: item, password: password)
                 } label: {
-                    Image(systemName: audio.playingID == item.id && audio.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                        .font(.system(size: 36))
-                        .foregroundStyle(.red)
+                    Group {
+                        if audio.playingID == item.id && audio.isLoading {
+                            ProgressView()
+                        } else {
+                            Image(systemName: audio.playingID == item.id && audio.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                                .font(.system(size: 36))
+                                .foregroundStyle(.red)
+                        }
+                    }
+                    .frame(width: 44, height: 44)
                 }
                 .buttonStyle(.borderless)
-                .disabled(busy || audio.hasRecording)
+                .disabled(busy || audio.hasRecording || (audio.playingID == item.id && audio.isLoading))
                 .accessibilityLabel(String(localized: audio.playingID == item.id && audio.isPlaying ? "audio.pause" : "audio.play"))
                 VStack(alignment: .leading, spacing: 5) {
                     Text(item.fileName).font(.headline).lineLimit(2)
@@ -233,17 +247,11 @@ struct AudioView: View {
             Button(String(localized: "common.delete"), systemImage: "trash", role: .destructive) { deleteItem = item }
         }
         .swipeActions(edge: .trailing) {
-            Button(String(localized: "common.delete"), role: .destructive) { deleteItem = item }
-            Button(String(localized: "audio.rename")) { newName = item.fileName; renameItem = item }
-                .tint(.blue)
-        }
-        .swipeActions(edge: .leading) {
-            Button {
-                shareAudio(item)
-            } label: {
-                Label(String(localized: "common.share"), systemImage: "square.and.arrow.up")
+            if !audio.isPlaying && audio.playingID != item.id {
+                Button(String(localized: "common.delete"), role: .destructive) { deleteItem = item }
+                Button(String(localized: "audio.rename")) { newName = item.fileName; renameItem = item }
+                    .tint(.blue)
             }
-            .tint(.blue)
         }
         .disabled(busy)
     }
@@ -261,24 +269,27 @@ struct AudioView: View {
                 .frame(height: 48)
                 .accessibilityHidden(true)
                 Text(formatTime(audio.elapsed)).font(.largeTitle.monospacedDigit())
-                Text(String(localized: audio.isRecording ? "audio.recording" : "audio.paused"))
+                Text(String(localized: saveFailed ? "audio.error.save" : (audio.isRecording ? "audio.recording" : "audio.paused")))
                     .font(.caption).foregroundStyle(.secondary)
                 HStack {
-                    Button(String(localized: "common.cancel")) { confirmDiscard = true }
+                    Button(String(localized: saveFailed ? "audio.discard" : "common.cancel")) { confirmDiscard = true }
                     Spacer()
-                    Button { audio.toggleRecording() } label: {
-                        Label(String(localized: audio.isRecording ? "audio.pause" : "audio.resume"),
-                              systemImage: audio.isRecording ? "pause.fill" : "mic.fill")
+                    if !saveFailed {
+                        Button { audio.toggleRecording() } label: {
+                            Label(String(localized: audio.isRecording ? "audio.pause" : "audio.resume"),
+                                  systemImage: audio.isRecording ? "pause.fill" : "mic.fill")
+                        }
+                        .disabled(!audio.canResume)
+                        Spacer()
                     }
-                    .disabled(!audio.canResume)
-                    Spacer()
-                    Button(String(localized: "common.save")) { saveRecording() }
+                    Button(String(localized: saveFailed ? "common.retry" : "common.save")) { saveRecording() }
                         .fontWeight(.semibold)
                         .accessibilityIdentifier("audio.save")
                 }
             } else {
                 Button {
                     guard canAccess, hasCapacity(for: 1) else { return }
+                    saveFailed = false
                     audio.startRecording()
                 } label: {
                     VStack(spacing: 8) {
@@ -332,10 +343,10 @@ struct AudioView: View {
     }
 
     private func saveRecording() {
-        guard !isSaving, canAccess, let password = auth.sessionPassword,
+        guard !isSaving, canAccess, let password = auth.sessionPassword, hasCapacity(for: 1),
             let url = audio.finishRecording()
         else { return }
-        guard hasCapacity(for: 1) else { return }
+        saveFailed = false
         isSaving = true
         // Allow a recording already in progress to finish encrypting when entering the background.
         let backgroundID = UIApplication.shared.beginBackgroundTask(withName: "Save audio memo") {
@@ -357,6 +368,7 @@ struct AudioView: View {
             } catch is CancellationError {
                 audio.discardRecording()
             } catch {
+                saveFailed = true
                 errorMessage = String(localized: "audio.error.save")
                 if !canAccess { audio.discardRecording() }
             }
@@ -373,29 +385,52 @@ struct AudioView: View {
         }
 
         isSharing = true
+        let requestID = UUID()
+        shareRequestID = requestID
+        let path = item.encryptedPath
+        let fileExtension = item.fileExtension
+        let name = item.fileName.hasSuffix(fileExtension) ? item.fileName : item.fullFileName
         shareTask = Task {
-            defer { isSharing = false }
+            let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(
+                "shared_audio_\(UUID().uuidString)", isDirectory: true)
+            var presented = false
+            defer {
+                if !presented { try? FileManager.default.removeItem(at: tempDir) }
+                if shareRequestID == requestID {
+                    isSharing = false
+                    shareRequestID = nil
+                    shareTask = nil
+                }
+            }
             do {
-                let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(
-                    "shared_audio_\(UUID().uuidString)", isDirectory: true)
+                let decryptedURL = try await FileStorageService.shared.createDecryptedTempFileAsync(
+                    path: path, password: password, preferredExtension: fileExtension)
+                defer { try? FileManager.default.removeItem(at: decryptedURL) }
+                try Task.checkCancellation()
+                guard canAccess, shareRequestID == requestID else { return }
                 try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
-                let name = item.fileName.hasSuffix(item.fileExtension) ? item.fileName : item.fullFileName
                 let shareURL = tempDir.appendingPathComponent(name)
-                let sourceURL = FileStorageService.shared.getFileURL(for: item.encryptedPath)
-                try EncryptionService.shared.decryptFile(inputURL: sourceURL, to: shareURL, password: password)
+                try FileManager.default.moveItem(at: decryptedURL, to: shareURL)
                 try FileManager.default.setAttributes(
                     [.protectionKey: FileProtectionType.complete],
                     ofItemAtPath: shareURL.path)
 
-                guard !Task.isCancelled else {
-                    try? FileManager.default.removeItem(at: tempDir)
-                    return
-                }
                 shareAudioItem = ShareAudioItem(url: shareURL)
+                presented = true
+            } catch is CancellationError {
+                return
             } catch {
+                guard !Task.isCancelled, shareRequestID == requestID else { return }
                 errorMessage = String(localized: "export.failed")
             }
         }
+    }
+
+    private func cancelSharing() {
+        shareTask?.cancel()
+        shareTask = nil
+        shareRequestID = nil
+        isSharing = false
     }
 
     private func leaveAudio() {
@@ -407,7 +442,7 @@ struct AudioView: View {
     private func revokeAccess() {
         showImportView = false
         saveTask?.cancel()
-        shareTask?.cancel()
+        cancelSharing()
         shareAudioItem = nil
         audio.stopPlayback()
         if !isSaving { audio.discardRecording() }

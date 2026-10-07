@@ -13,3 +13,5 @@
 "CFBundleName" = "ZeroNet空间";
 
 "NSMicrophoneUsageDescription" = "使用麦克风录制音频备忘录，录音将加密保存在您的设备上。";
+
+"NSPhotoLibraryUsageDescription" = "需要访问您的照片库，将照片和视频加密存储到本地私密空间。所有内容仅保存在您的设备上，零上传、零追踪。";

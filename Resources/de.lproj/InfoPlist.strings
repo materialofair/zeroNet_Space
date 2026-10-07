@@ -1,0 +1,4 @@
+"CFBundleDisplayName" = "ZeroNet Space";
+"CFBundleName" = "ZeroNet Space";
+"NSMicrophoneUsageDescription" = "Nimm Sprachmemos auf und speichere sie verschlüsselt auf diesem Gerät.";
+"NSPhotoLibraryUsageDescription" = "Greife auf deine Fotomediathek zu, um Fotos und Videos in deinem privaten Bereich auf diesem Gerät zu verschlüsseln. Deine Inhalte bleiben auf deinem Gerät, ohne Uploads oder Tracking.";

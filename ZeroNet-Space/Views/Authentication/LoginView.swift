@@ -73,11 +73,11 @@ struct LoginView: View {
     private var headerSection: some View {
         VStack(spacing: 12) {
             // 应用图标（缩小）
-            Image("LoginHero")
+            Image("AppIconDisplay")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 100, height: 100)
-                .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
                 .shadow(color: .black.opacity(0.15), radius: 15, y: 8)
 
             VStack(spacing: 4) {

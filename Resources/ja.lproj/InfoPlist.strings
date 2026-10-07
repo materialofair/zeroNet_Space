@@ -1,0 +1,4 @@
+"CFBundleDisplayName" = "ZeroNet Space";
+"CFBundleName" = "ZeroNet Space";
+"NSMicrophoneUsageDescription" = "音声メモを録音し、このデバイスに暗号化して保存します。";
+"NSPhotoLibraryUsageDescription" = "写真ライブラリにアクセスして、このデバイスのプライベート空間で写真や動画を暗号化します。コンテンツはデバイス内に保存され、アップロードや追跡は行いません。";

@@ -44,7 +44,7 @@ extension Date {
     var relativeTime: String {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .full
-        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.locale = .current
         return formatter.localizedString(for: self, relativeTo: Date())
     }
 
@@ -53,7 +53,7 @@ extension Date {
         let formatter = DateFormatter()
         formatter.dateStyle = .short
         formatter.timeStyle = .none
-        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.locale = .current
         return formatter.string(from: self)
     }
 
@@ -62,7 +62,7 @@ extension Date {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .medium
-        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.locale = .current
         return formatter.string(from: self)
     }
 }

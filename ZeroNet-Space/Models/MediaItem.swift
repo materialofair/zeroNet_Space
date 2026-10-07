@@ -87,7 +87,7 @@ final class MediaItem {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
-        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.locale = .current
         return formatter.string(from: createdAt)
     }
 

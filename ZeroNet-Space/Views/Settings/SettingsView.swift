@@ -126,6 +126,15 @@ struct SettingsView: View {
                 }
             }
 
+            if guestModeManager.isOwnerMode {
+                NavigationLink {
+                    AppIconSettingsView()
+                } label: {
+                    Label(String(localized: "appicon.title"), systemImage: "app.badge")
+                }
+                .accessibilityIdentifier("settings.appIcon")
+            }
+
         } header: {
             Label(String(localized: "settings.display"), systemImage: "rectangle.grid.3x2")
         } footer: {
@@ -671,7 +680,7 @@ struct AboutView: View {
                             .font(.title3)
                             .foregroundColor(.secondary)
 
-                        Text(String(localized: "settings.version"))
+                        Text("\(String(localized: "settings.version")) \(AppConstants.appVersion)")
                             .font(.subheadline)
                             .foregroundColor(.secondary)
                             .padding(.top, 4)

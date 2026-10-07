@@ -13,3 +13,5 @@
 "CFBundleName" = "ZeroNet Space";
 
 "NSMicrophoneUsageDescription" = "Record audio memos and store them encrypted on this device.";
+
+"NSPhotoLibraryUsageDescription" = "Access your photo library to encrypt photos and videos in your private space on this device. Your content stays on your device, with no uploads or tracking.";

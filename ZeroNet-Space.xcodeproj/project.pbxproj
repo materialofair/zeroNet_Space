@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A71000000000000000000001 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = A71000000000000000000004 /* InfoPlist.strings */; };
 		40B133EF2ECA009700B54115 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 40B133EE2ECA009700B54115 /* Localizable.xcstrings */; };
 		40B133F92ECAAC0A00B54115 /* Products.storekit in Resources */ = {isa = PBXBuildFile; fileRef = 40B133F82ECAAC0A00B54115 /* Products.storekit */; };
 /* End PBXBuildFile section */
@@ -29,11 +30,21 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A71000000000000000000002 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = Resources/en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		A71000000000000000000003 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "Resources/zh-Hans.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 		4055905A2EBB867900944275 /* 零网络空间.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "零网络空间.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		405590692EBB867B00944275 /* ZeroNet-SpaceTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "ZeroNet-SpaceTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		405590732EBB867B00944275 /* ZeroNet-SpaceUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "ZeroNet-SpaceUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		40B133EE2ECA009700B54115 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; name = Localizable.xcstrings; path = Resources/Localizable.xcstrings; sourceTree = "<group>"; };
 		40B133F82ECAAC0A00B54115 /* Products.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = Products.storekit; sourceTree = "<group>"; };
+		A71000000000000000000005 /* zh-Hant */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hant"; path = "Resources/zh-Hant.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		A71000000000000000000006 /* ja */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "ja"; path = "Resources/ja.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		A71000000000000000000007 /* pl */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pl"; path = "Resources/pl.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		A71000000000000000000008 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "de"; path = "Resources/de.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		A71000000000000000000009 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "fr"; path = "Resources/fr.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		A7100000000000000000000A /* es */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "es"; path = "Resources/es.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		A7100000000000000000000B /* pt-BR */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "pt-BR"; path = "Resources/pt-BR.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
+		A7100000000000000000000C /* id */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "id"; path = "Resources/id.lproj/InfoPlist.strings"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -84,6 +95,7 @@
 			children = (
 				40B133F82ECAAC0A00B54115 /* Products.storekit */,
 				40B133EE2ECA009700B54115 /* Localizable.xcstrings */,
+				A71000000000000000000004 /* InfoPlist.strings */,
 				4055905C2EBB867900944275 /* ZeroNet-Space */,
 				4055906C2EBB867B00944275 /* ZeroNet-SpaceTests */,
 				405590762EBB867B00944275 /* ZeroNet-SpaceUITests */,
@@ -102,6 +114,10 @@
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
+
+/* Begin PBXVariantGroup section */
+		A71000000000000000000004 /* InfoPlist.strings */ = {isa = PBXVariantGroup; children = (A71000000000000000000002 /* en */, A71000000000000000000003 /* zh-Hans */, A71000000000000000000005 /* zh-Hant */, A71000000000000000000006 /* ja */, A71000000000000000000007 /* pl */, A71000000000000000000008 /* de */, A71000000000000000000009 /* fr */, A7100000000000000000000A /* es */, A7100000000000000000000B /* pt-BR */, A7100000000000000000000C /* id */, ); name = InfoPlist.strings; sourceTree = "<group>"; };
+/* End PBXVariantGroup section */
 
 /* Begin PBXNativeTarget section */
 		405590592EBB867900944275 /* ZeroNet-Space */ = {
@@ -201,6 +217,14 @@
 			knownRegions = (
 				en,
 				"zh-Hans",
+				"zh-Hant",
+				"ja",
+				"pl",
+				"de",
+				"fr",
+				"es",
+				"pt-BR",
+				"id",
 				Base,
 			);
 			mainGroup = 405590512EBB867900944275;
@@ -223,6 +247,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				40B133EF2ECA009700B54115 /* Localizable.xcstrings in Resources */,
+				A71000000000000000000001 /* InfoPlist.strings in Resources */,
 				40B133F92ECAAC0A00B54115 /* Products.storekit in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -405,15 +430,16 @@
 		4055907E2EBB867B00944275 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Paper AppIcon-Calculator AppIcon-Pebble AppIcon-Ruler";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 18;
 				DEVELOPMENT_TEAM = MB2PNFT9L9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Resources/Info.plist";
+				INFOPLIST_FILE = Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "zeroNet Space";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Record audio memos and store them encrypted on this device.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "需要访问您的照片库，将照片和视频加密存储到本地私密空间。所有内容仅保存在您的设备上，零上传、零追踪。";
@@ -427,7 +453,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.3.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.zeronetspace.unlimited-imports";
 				PRODUCT_MODULE_NAME = ZeroNet_Space;
 				PRODUCT_NAME = "零网络空间";
@@ -447,15 +473,16 @@
 		4055907F2EBB867B00944275 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = "AppIcon-Paper AppIcon-Calculator AppIcon-Pebble AppIcon-Ruler";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 18;
 				DEVELOPMENT_TEAM = MB2PNFT9L9;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = "Resources/Info.plist";
+				INFOPLIST_FILE = Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "zeroNet Space";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Record audio memos and store them encrypted on this device.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "需要访问您的照片库，将照片和视频加密存储到本地私密空间。所有内容仅保存在您的设备上，零上传、零追踪。";
@@ -469,7 +496,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.3.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.zeronetspace.unlimited-imports";
 				PRODUCT_MODULE_NAME = ZeroNet_Space;
 				PRODUCT_NAME = "零网络空间";
@@ -491,11 +518,11 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 18;
 				DEVELOPMENT_TEAM = MB2PNFT9L9;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.3.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "wq.ZeroNet-SpaceTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -513,11 +540,11 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 18;
 				DEVELOPMENT_TEAM = MB2PNFT9L9;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.3.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "wq.ZeroNet-SpaceTests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -534,10 +561,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 18;
 				DEVELOPMENT_TEAM = MB2PNFT9L9;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.3.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "wq.ZeroNet-SpaceUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
@@ -554,10 +581,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 18;
 				DEVELOPMENT_TEAM = MB2PNFT9L9;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.3.0;
+				MARKETING_VERSION = 1.3.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "wq.ZeroNet-SpaceUITests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;

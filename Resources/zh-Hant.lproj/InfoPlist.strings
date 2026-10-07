@@ -1,0 +1,4 @@
+"CFBundleDisplayName" = "ZeroNet Space";
+"CFBundleName" = "ZeroNet Space";
+"NSMicrophoneUsageDescription" = "錄製語音備忘錄，並以加密方式儲存在此裝置上。";
+"NSPhotoLibraryUsageDescription" = "存取您的照片圖庫，以加密此裝置私人空間中的照片與影片。內容留在您的裝置上，不上傳也不追蹤。";

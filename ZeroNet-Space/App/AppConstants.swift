@@ -16,12 +16,14 @@ nonisolated enum AppConstants {
     static let appName = String(localized: "app.name")
 
     /// 应用版本（从 Info.plist 读取，跟随 MARKETING_VERSION，避免手写过期）
-    static let appVersion =
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.0.0"
+    static var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.3.6"
+    }
 
     /// 构建号（跟随 CURRENT_PROJECT_VERSION）
-    static let buildNumber =
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
+    static var buildNumber: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "16"
+    }
 
     /// Bundle Identifier
     static let bundleIdentifier = "com.zeronetspace.unlimited-imports"

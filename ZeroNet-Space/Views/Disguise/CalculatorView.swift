@@ -78,7 +78,7 @@ struct CalculatorView: View {
     // MARK: - Display View
 
     private func displayView(fontSize: CGFloat) -> some View {
-        Text(viewModel.state.displayValue)
+        Text(viewModel.state.localizedDisplayValue())
             .font(.system(size: fontSize, weight: .light, design: .default))
             .foregroundColor(.white)
             .frame(maxWidth: .infinity, alignment: .trailing)
@@ -101,7 +101,7 @@ struct CalculatorButtonView: View {
         Button(action: {
             handleButtonPress()
         }) {
-            Text(button.title)
+            Text(button.localizedTitle())
                 .font(.system(size: min(32, buttonSize * 0.4), weight: .medium))
                 .foregroundColor(.white)
                 .frame(

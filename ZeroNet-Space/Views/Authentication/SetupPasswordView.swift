@@ -26,36 +26,39 @@ struct SetupPasswordView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                // 背景渐变
+            ScrollView {
+                VStack(spacing: 30) {
+                    // 头部图标和标题
+                    headerSection
+
+                    // 零网络隐私提醒
+                    privacyNotice
+
+                    // 密码输入表单
+                    passwordForm
+
+                    // 设置按钮
+                    setupButton
+
+                    // 密码提示
+                    passwordHints
+
+                    Spacer()
+                }
+                .padding()
+            }
+            // Clip scrolled text to the safe viewport instead of drawing behind
+            // the transparent status bar or keyboard.
+            .clipped()
+            .background {
+                // Only the background extends beyond safe areas. Keep content and
+                // focused fields inside the status-bar and keyboard-safe viewport.
                 LinearGradient(
                     colors: [.blue.opacity(0.3), .purple.opacity(0.3)],
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
-
-                ScrollView {
-                    VStack(spacing: 30) {
-                        // 头部图标和标题
-                        headerSection
-
-                        // 零网络隐私提醒
-                        privacyNotice
-
-                        // 密码输入表单
-                        passwordForm
-
-                        // 设置按钮
-                        setupButton
-
-                        // 密码提示
-                        passwordHints
-
-                        Spacer()
-                    }
-                    .padding()
-                }
             }
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -288,10 +291,13 @@ struct SetupPasswordView: View {
                 } else {
                     Text(String(localized: "setup.finish"))
                         .fontWeight(.semibold)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
+            .padding(.vertical, 12)
+            .frame(minHeight: 50)
             .background(viewModel.isSetupButtonEnabled ? Color.blue : Color.gray)
             .foregroundColor(.white)
             .cornerRadius(12)
