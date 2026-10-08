@@ -1,3 +1,38 @@
+# 计算器解锁验证记录（2026-10-08）
+
+## 原因与修复
+
+计算器原先解密 `disguisePassword` 副本后比对输入；副本使用
+`identifierForVendor` 派生的字符串加密。开发包与 App Store 包的 vendor ID
+可能不同，副本解密失败时密码序列为空，但 `isDisguisePasswordSet` 标记仍存在，
+用户留在计算器页且正确密码不触发解锁。旧副本未同步也会匹配过期密码。
+
+计算器现在直接调用 `verifyPassword` 验证主密码哈希，与普通登录共用验证依据，
+不再读取设备标识绑定的副本。保持原有数据密码解密及访客验证流程。
+旧 Keychain 条目和媒体数据没有清除或重加密。
+
+## 验证命令与结果
+
+```sh
+xcodebuild test -scheme ZeroNet-Space -configuration Release -destination 'platform=iOS Simulator,id=7D7DA111-3384-4622-8976-F59F28EFFE4F' -derivedDataPath /tmp/zeronet-auth-release -only-testing:ZeroNet-SpaceTests/CalculatorUnlockTests ENABLE_TESTABILITY=YES
+xcodebuild test -scheme ZeroNet-Space -configuration Release -destination 'platform=iOS Simulator,id=7D7DA111-3384-4622-8976-F59F28EFFE4F' -derivedDataPath /tmp/zeronet-auth-release -only-testing:ZeroNet-SpaceTests ENABLE_TESTABILITY=YES
+xcodebuild build -scheme ZeroNet-Space -configuration Release -destination 'generic/platform=iOS' -derivedDataPath /tmp/zeronet-auth-device-release CODE_SIGNING_ALLOWED=NO
+git diff --check
+```
+
+- 修复前：4 项新增测试中 3 项失败；vendor ID 变化和副本缺失时正确密码无法解锁，过期副本可错误触发解锁。访客/错误密码用例通过。
+- 修复后：37 项单元测试全部通过，0 项跳过；4 项新增回归测试全部通过。
+- iOS arm64 Release 构建通过；未签名，未安装到真机。
+- 日志：`/tmp/zeronet-auth-regression-before.log`、`/tmp/zeronet-auth-regression-after.log`、`/tmp/zeronet-auth-device-release.log`。
+- 测试使用 UUID 命名的 Keychain service 和独立 NotificationCenter，避免改动正常凭据或触发应用的认证通知。
+
+## 尚需验证
+
+尚未读取用户真机上的故障日志，vendor ID 变化是与症状一致、已由回归测试复现的原因，
+并未测量该手机实际的旧/新 ID。未覆盖安装现有 App Store 包到修复发行包的升级过程。
+需要发布修复版本后，在原有数据保留的前提下，输入原主密码并按等号验证解锁与媒体读取。
+现有 Swift 并发兼容性和资源警告未在本次修复中处理。
+
 # 音频模块验证记录（2026-09-06）
 
 ## 验证环境

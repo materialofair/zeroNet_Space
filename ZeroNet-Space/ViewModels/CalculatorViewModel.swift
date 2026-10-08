@@ -13,19 +13,13 @@ class CalculatorViewModel: ObservableObject {
     @Published var state = CalculatorState()
     @Published var shouldUnlock: Bool = false
 
-    // 密码序列（仅支持数字和小数点）
-    private var passwordSequence: String
     private let maxHistoryLength = 20
-    private let keychainService = KeychainService.shared
+    private let keychainService: KeychainService
+    private let notificationCenter: NotificationCenter
 
-    init() {
-        // 先尝试迁移旧密码
-        keychainService.migrateDisguisePasswordFromUserDefaults()
-
-        // 从 Keychain 读取密码序列
-        // 未设置时保持为空，checkPasswordSequence 会拒绝该路径解锁，
-        // 不提供任何默认密码
-        self.passwordSequence = keychainService.loadDisguisePassword() ?? ""
+    init(keychainService: KeychainService = .shared, notificationCenter: NotificationCenter = .default) {
+        self.keychainService = keychainService
+        self.notificationCenter = notificationCenter
     }
 
     // MARK: - 计算器逻辑
@@ -152,14 +146,15 @@ class CalculatorViewModel: ObservableObject {
         // 检查访客密码是否已设置
         let hasGuestPassword = keychainService.isGuestPasswordSet()
 
-        // 检查是否匹配主密码（未设置密码序列时不允许此路径解锁）
-        if !passwordSequence.isEmpty && passwordInput == passwordSequence {
+        // 计算器密码与主密码同步，直接验证哈希；旧副本依赖的 vendor ID
+        // 在开发包切换至 App Store 包时可能变化，不能作为解锁依据。
+        if keychainService.verifyPassword(passwordInput) {
             shouldUnlock = true
             state.inputHistory.removeAll()
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 // 通知解锁到主人模式，传递密码用于后续验证
-                NotificationCenter.default.post(
+                self.notificationCenter.post(
                     name: .unlockFromDisguise,
                     object: nil,
                     userInfo: ["mode": "owner", "password": passwordInput]
@@ -173,7 +168,7 @@ class CalculatorViewModel: ObservableObject {
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 // 通知解锁到访客模式，传递密码用于后续验证
-                NotificationCenter.default.post(
+                self.notificationCenter.post(
                     name: .unlockFromDisguise,
                     object: nil,
                     userInfo: ["mode": "guest", "password": passwordInput]

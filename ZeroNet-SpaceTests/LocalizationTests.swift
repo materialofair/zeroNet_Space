@@ -99,7 +99,7 @@ class LocalizationTests: XCTestCase {
 
     func testAppVersion() throws {
         print("🔍 AppConstants.appVersion = \(AppConstants.appVersion)")
-        XCTAssertEqual(AppConstants.appVersion, "1.3.6")
+        XCTAssertEqual(AppConstants.appVersion, "1.3.8")
     }
 
     // MARK: - Chinese Locale Tests

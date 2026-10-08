@@ -17,12 +17,12 @@ nonisolated enum AppConstants {
 
     /// 应用版本（从 Info.plist 读取，跟随 MARKETING_VERSION，避免手写过期）
     static var appVersion: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.3.6"
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.3.8"
     }
 
     /// 构建号（跟随 CURRENT_PROJECT_VERSION）
     static var buildNumber: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "16"
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "21"
     }
 
     /// Bundle Identifier

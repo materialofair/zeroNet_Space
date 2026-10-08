@@ -43,12 +43,18 @@ class KeychainService {
 
     static let shared = KeychainService()
     private init() {
+        service = "com.zeronetspace.unlimited-imports"
         migrateFromLegacyServiceIfNeeded()
+    }
+
+    /// 独立命名空间用于隔离凭据，不迁移其他 service 的数据。
+    init(service: String) {
+        self.service = service
     }
 
     // MARK: - Constants
 
-    private let service = "com.zeronetspace.unlimited-imports"
+    private let service: String
     private let passwordAccount = "userPassword"
     private let saltAccount = "passwordSalt"
     private let isSetAccount = "isPasswordSet"
