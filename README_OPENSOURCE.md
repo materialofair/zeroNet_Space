@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**真正的离线隐私空间 | 100%开源 | 零网络 | 零追踪**
+**本地加密隐私空间 | GPL-3.0 开源 | 无需应用账号 | 不自动同步云端**
 
 [![Platform](https://img.shields.io/badge/Platform-iOS%2015.0+-lightgrey.svg)](https://www.apple.com/ios/)
 [![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)](https://swift.org)
@@ -20,14 +20,15 @@
 
 ### 📖 关于项目
 
-零网络空间是一款**完全开源**的iOS隐私保护应用。
+零网络空间是一款 iOS 本地隐私保护应用，源码按 **GPL-3.0** 公开，可供查看、研究和审查。
 
-**我们承诺**：
-- ✅ **零网络**：代码级阻断所有网络请求
-- ✅ **零追踪**：不含任何SDK、广告、统计、云备份
-- ✅ **零账号**：不注册、不登录、不收集隐私数据
-- ✅ **本地加密**：AES-256-GCM军用级加密，密钥仅存本地Keychain
-- ✅ **100%开源**：所有代码公开透明，接受社区审查
+**隐私设计与开源优势**：
+- ✅ **本地内容**：个人内容在设备上保存，应用不自动同步云端
+- ✅ **购买服务边界**：App Store 商品信息加载、购买与恢复购买使用 Apple StoreKit 网络服务，需要联网
+- ✅ **隐私声明**：仓库中的隐私清单声明不追踪、不收集用户数据；声明仍需结合源码与运行时行为核查
+- ✅ **无需应用账号**：日常内容管理无需注册应用账号；App Store 购买由 Apple 处理
+- ✅ **本地加密**：公开实现使用 AES-256-GCM 与 PBKDF2 密钥派生，可检查具体实现
+- ✅ **GPL-3.0 开源**：可以查看源码、自行编译，并按许可证要求修改和分发
 
 **核心理念**：你的数据应该只属于你自己，不应该被上传、分析或追踪。
 
@@ -39,16 +40,18 @@
 
 > **建立信任。**
 
-很多应用都声称"零网络"、"零追踪"，但用户无法验证。  
-我选择开源，是为了让任何人都可以检查代码，确认我们真的做到了承诺。
+隐私承诺需要可检查的依据。  
+公开源码让任何人都可以检查内容存储、加密实现和 Apple 购买集成，提出问题并参与改进。
 
 **开源不是为了免费，而是为了透明。**
 
 你可以：
-- 📖 查看所有源代码，验证"真的没有网络代码"
-- 🔍 检查加密实现，确认数据安全
-- 🛡️ 审查隐私保护机制
-- 🧪 自己编译运行，完全掌控
+- 📖 查看个人内容的存储流程与独立的 Apple StoreKit 购买流程
+- 🔍 检查加密与密钥管理实现，评估风险并报告问题
+- 🛡️ 审查隐私保护机制和隐私清单
+- 🧪 自行编译、测试，并按 GPL-3.0 使用和修改源码
+
+**审查边界**：源码可供审查不代表已经通过独立安全审计，也不能单凭开源证明当前 App Store 二进制与公开源码完全一致。验证结果应注明源码提交、构建方式和应用版本。
 
 如果你发现任何可疑代码，欢迎在GitHub提Issue。
 
@@ -173,20 +176,18 @@ IV: 12字节随机（每次加密唯一）
 内存安全: 密钥使用后立即擦除
 ```
 
-#### 网络隔离验证
+#### 本地内容与购买服务的网络边界
 ```
-网络权限: ❌ 未请求
-网络代码: ❌ 不存在（可查看源码验证）
-第三方SDK: ❌ 零依赖
-云服务: ❌ 完全本地
-统计追踪: ❌ 零收集
-隐私清单: ✅ 已提供（PrivacyInfo.xcprivacy）
+个人内容: 在设备上保存，应用不自动同步云端
+商品信息、购买与恢复购买: Apple StoreKit 网络服务，需要联网
+隐私声明: PrivacyInfo.xcprivacy 声明不追踪、不收集用户数据
+验证范围: 本地内容流程与 Apple 交易流程应分别检查
 ```
 
 **验证方式**：
-- 🔍 查看源代码 - 搜索 `URLSession`、`Alamofire`、`网络请求`
-- 📄 检查 `PrivacyInfo.xcprivacy` - 隐私清单文件
-- 🛠️ 运行时监控 - 使用Charles/Wireshark验证零网络流量
+- 🔍 查看 [FileStorageService.swift](ZeroNet-Space/Services/FileStorageService.swift)、[EncryptionService.swift](ZeroNet-Space/Services/EncryptionService.swift) 和 [PurchaseManager.swift](ZeroNet-Space/Views/Settings/PurchaseManager.swift)，检查存储、加密与购买实现；仅搜索不到 `URLSession` 不能证明没有网络活动
+- 📄 检查 [PrivacyInfo.xcprivacy](ZeroNet-Space/PrivacyInfo.xcprivacy)，并将声明与实际实现对照
+- 🛠️ 运行时监控 - 分别测试离线内容操作、商品信息加载、购买和恢复购买，记录版本与测试范围；本页不声称已验证零网络流量
 
 ---
 
@@ -228,9 +229,9 @@ IV: 12字节随机（每次加密唯一）
 - 架构调整
 
 ❌ **明确拒绝**：
-- 任何涉及网络的功能
+- 自动上传或云端分析个人内容的功能
 - 移除付费限制（Fork后可自行修改）
-- 违背"零网络"理念的功能
+- 违背本地内容与无追踪隐私设计的功能
 
 #### 如何贡献
 
@@ -291,17 +292,18 @@ IV: 12字节随机（每次加密唯一）
 #### 数据安全提示
 
 - **忘记密码无法恢复** - 无法重置密码，忘记密码需要卸载应用
-- **无云备份** - 所有数据仅存储本地，卸载应用会丢失数据
-- **离线使用** - 完全不联网意味着无法远程恢复数据
+- **无自动云同步** - 应用不自动同步个人内容；重要内容请另存副本，卸载应用会删除本地数据
+- **离线内容管理** - 本地内容操作可离线使用，应用不提供远程内容恢复；App Store 购买与恢复购买需要联网
+- **备份边界** - 应用不自动同步云端，不等于已排除 iOS 系统备份或用户主动导出
 - **请务必记住密码** - 建议使用密码管理器记录
 
 #### 隐私承诺
 
-- ✅ 我们**永远不会**添加网络功能
+- ✅ 个人内容在本地处理，不自动同步云端；Apple StoreKit 购买服务需要联网
 - ✅ 我们**永远不会**收集用户数据
 - ✅ 我们**永远不会**添加追踪或统计
 - ✅ 我们**永远不会**添加广告
-- ✅ **代码永远开源，接受社区监督**
+- ✅ **源码按 GPL-3.0 公开，欢迎社区审查与改进**
 
 ---
 
@@ -391,14 +393,15 @@ open ZeroNetSpace.xcodeproj
 
 ### 📖 About
 
-ZeroNet Space is a **fully open-source** iOS privacy protection app.
+ZeroNet Space is an iOS local privacy app with source code published under **GPL-3.0** for inspection, study, and review.
 
-**Our Promises**:
-- ✅ **Zero Network**: Code-level network blocking
-- ✅ **Zero Tracking**: No SDK, ads, analytics, or cloud backup
-- ✅ **Zero Account**: No registration, login, or data collection
-- ✅ **Local Encryption**: AES-256-GCM with PBKDF2 key derivation
-- ✅ **100% Open Source**: All code is public and auditable
+**Privacy Design and Open-Source Benefits**:
+- ✅ **Local Content**: Personal content is stored on-device without automatic cloud sync by the app
+- ✅ **Purchase Service Boundary**: App Store product loading, purchases, and purchase restoration use Apple StoreKit network services and require internet access
+- ✅ **Privacy Declaration**: The repository's privacy manifest declares no tracking or data collection; declarations still need to be checked against source code and runtime behavior
+- ✅ **No App Account**: Everyday content management requires no app registration; Apple handles App Store purchases
+- ✅ **Local Encryption**: The published implementation uses AES-256-GCM with PBKDF2 key derivation and can be inspected
+- ✅ **GPL-3.0 Open Source**: Inspect and build the source, and modify or redistribute it under the license terms
 
 **Core Philosophy**: Your data belongs to you alone, not to be uploaded, analyzed, or tracked.
 
@@ -410,16 +413,18 @@ ZeroNet Space is a **fully open-source** iOS privacy protection app.
 
 > **To build trust.**
 
-Many apps claim "zero network" and "zero tracking", but users can't verify.  
-I chose open source so anyone can inspect the code and confirm we actually deliver on our promises.
+Privacy claims need inspectable evidence.  
+Publishing the source lets anyone examine content storage, encryption, and the Apple purchase integration, raise questions, and contribute improvements.
 
 **Open source is not about being free, it's about being transparent.**
 
 You can:
-- 📖 Review all source code to verify "truly no network code"
-- 🔍 Inspect encryption implementation to ensure data security
-- 🛡️ Audit privacy protection mechanisms
-- 🧪 Compile and run yourself, have complete control
+- 📖 Review personal-content storage and the separate Apple StoreKit purchase flow
+- 🔍 Inspect encryption and key management, assess risks, and report issues
+- 🛡️ Review privacy mechanisms and the privacy manifest
+- 🧪 Build and test the source yourself, and use or modify it under GPL-3.0
+
+**Review Limits**: Source availability does not mean an independent security audit has been completed, and does not by itself prove that the current App Store binary matches the published source. Verification results should identify the source commit, build process, and app version.
 
 If you find any suspicious code, please open an issue on GitHub.
 
@@ -544,20 +549,18 @@ Format: Salt(16) + IV(12) + Tag(16) + Ciphertext
 Memory Safety: Immediate key erasure after use
 ```
 
-#### Network Isolation Verification
+#### Network Boundary: Local Content and Purchase Services
 ```
-Network Permission: ❌ Not requested
-Network Code: ❌ Does not exist (verify in source)
-Third-party SDK: ❌ Zero dependencies
-Cloud Service: ❌ Completely local
-Analytics Tracking: ❌ Zero collection
-Privacy Manifest: ✅ Provided (PrivacyInfo.xcprivacy)
+Personal content: Stored on-device without automatic cloud sync by the app
+Product loading, purchases, and restoration: Apple StoreKit network services; internet access required
+Privacy declaration: PrivacyInfo.xcprivacy declares no tracking or data collection
+Verification scope: Check local-content and Apple transaction flows separately
 ```
 
 **Verification Methods**:
-- 🔍 View source code - Search for `URLSession`, `Alamofire`, `network requests`
-- 📄 Check `PrivacyInfo.xcprivacy` - Privacy manifest file
-- 🛠️ Runtime monitoring - Use Charles/Wireshark to verify zero traffic
+- 🔍 Inspect storage, encryption, and purchase logic in [FileStorageService.swift](ZeroNet-Space/Services/FileStorageService.swift), [EncryptionService.swift](ZeroNet-Space/Services/EncryptionService.swift), and [PurchaseManager.swift](ZeroNet-Space/Views/Settings/PurchaseManager.swift); absence of `URLSession` alone does not prove absence of network activity
+- 📄 Compare [PrivacyInfo.xcprivacy](ZeroNet-Space/PrivacyInfo.xcprivacy) declarations with the implementation
+- 🛠️ Runtime monitoring - Test offline content operations, product loading, purchases, and restoration separately, documenting the version and test scope; this page does not claim verified zero network traffic
 
 ---
 
@@ -599,9 +602,9 @@ We welcome community contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for d
 - Architecture adjustments
 
 ❌ **Clearly Rejected**:
-- Any network-related features
+- Features that automatically upload or analyze personal content in the cloud
 - Removing payment limits (can modify in your fork)
-- Features violating "zero network" philosophy
+- Features violating the local-content and no-tracking privacy design
 
 #### How to Contribute
 
@@ -662,17 +665,18 @@ For detailed license terms, see LICENSE file.
 #### Data Security Notice
 
 - **Password Cannot Be Recovered** - Cannot reset password, forgetting requires app uninstallation
-- **No Cloud Backup** - All data stored locally only, uninstalling loses data
-- **Offline Use** - Complete offline means no remote data recovery
+- **No Automatic Cloud Sync** - The app does not automatically sync personal content; keep separate copies of important content, as uninstalling deletes local app data
+- **Offline Content Management** - Local content operations work offline and the app provides no remote content recovery; App Store purchases and restoration require internet access
+- **Backup Boundary** - No automatic cloud sync by the app does not establish that iOS system backups or user-initiated exports are excluded
 - **Please Remember Password** - Recommend using password manager
 
 #### Privacy Promise
 
-- ✅ We will **NEVER** add network features
+- ✅ Personal content is processed locally without automatic cloud sync; Apple StoreKit purchase services require internet access
 - ✅ We will **NEVER** collect user data
 - ✅ We will **NEVER** add tracking or analytics
 - ✅ We will **NEVER** add ads
-- ✅ **Code will always be open source, monitored by community**
+- ✅ **Source is published under GPL-3.0 for community review and improvement**
 
 ---
 
