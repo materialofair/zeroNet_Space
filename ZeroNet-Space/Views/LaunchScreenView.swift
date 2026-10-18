@@ -31,7 +31,7 @@ struct LaunchScreenView: View {
                             .shadow(color: .black.opacity(isDark ? 0.22 : 0.12), radius: 24, y: 12)
 
                         VStack(spacing: 10) {
-                            Text("ZeroNet Space")
+                            Text("SealedPocket")
                                 .font(.system(size: 28, weight: .medium, design: .serif))
                                 .tracking(0.4)
                             Text(String(localized: "launch.brand.subtitle"))

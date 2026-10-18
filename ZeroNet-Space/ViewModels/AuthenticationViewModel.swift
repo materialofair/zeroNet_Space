@@ -369,6 +369,7 @@ final class AuthenticationViewModel: ObservableObject {
 
     /// 登出
     func logout() {
+        NotificationCenter.default.post(name: .vaultWillLock, object: self)
         isAuthenticated = false
 
         // 🔒 安全清理密码内存（willSet 中就地清零）

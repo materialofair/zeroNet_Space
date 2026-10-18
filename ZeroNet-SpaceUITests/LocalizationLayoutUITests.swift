@@ -15,6 +15,22 @@ final class LocalizationLayoutUITests: XCTestCase {
     ]
 
     @MainActor
+    func testTenLanguagesBrandScreenshots() {
+        continueAfterFailure = false
+        for language in ["en", "zh-Hans", "zh-Hant", "ja", "pl", "de", "fr", "es", "pt-BR", "id"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-AppleLanguages", "(\(language))", "-AppleLocale", language, "-DemoModeEnabled", "NO"]
+            app.launch()
+            XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "SealedPocket")).firstMatch.waitForExistence(timeout: 8), language)
+            let attachment = XCTAttachment(screenshot: app.screenshot())
+            attachment.name = "SealedPocket-brand-\(language)"
+            attachment.lifetime = .keepAlways
+            add(attachment)
+            app.terminate()
+        }
+    }
+
+    @MainActor
     func testEightLanguagesInitialScreensAndRestartSwitch() throws {
         continueAfterFailure = false
         // English bookends show that the same installation switches back as well.

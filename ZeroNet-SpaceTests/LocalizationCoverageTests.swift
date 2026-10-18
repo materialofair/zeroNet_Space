@@ -3,7 +3,7 @@ import XCTest
 
 /// Checks compiled app resources, rather than relying on source catalog key counts.
 final class LocalizationCoverageTests: XCTestCase {
-    private let languages = ["zh-Hant", "ja", "pl", "de", "fr", "es", "pt-BR", "id"]
+    private let languages = ["en", "zh-Hans", "zh-Hant", "ja", "pl", "de", "fr", "es", "pt-BR", "id"]
     private let keys = ["setup.header.title", "login.unlock", "tab.photos", "tab.media", "tab.audio", "tab.files", "tab.secretSpace", "tab.settings", "action.cancel", "action.confirm", "filePreview.error.decrypt", "iap.restorePurchases", "iap.error.noPurchaseToRestore", "audio.share.vipRequired.message", "media.error.deleteFailed"]
 
     func testCompiledLanguagesAndCriticalFlows() throws {
@@ -19,7 +19,7 @@ final class LocalizationCoverageTests: XCTestCase {
             let permissionsPath = try XCTUnwrap(bundle.path(forResource: "InfoPlist", ofType: "strings"))
             let data = try Data(contentsOf: URL(fileURLWithPath: permissionsPath))
             let permissions = try XCTUnwrap(PropertyListSerialization.propertyList(from: data, format: nil) as? [String: String])
-            XCTAssertEqual(permissions["CFBundleDisplayName"], "ZeroNet Space")
+            XCTAssertEqual(permissions["CFBundleDisplayName"], "SealedPocket")
             for key in ["NSMicrophoneUsageDescription", "NSPhotoLibraryUsageDescription"] {
                 XCTAssertFalse(try XCTUnwrap(permissions[key]).isEmpty)
             }

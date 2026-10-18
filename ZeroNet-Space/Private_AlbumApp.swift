@@ -18,12 +18,7 @@ struct Private_AlbumApp: App {
     @StateObject private var guestModeManager = GuestModeManager.shared
     @State private var showLaunchScreen = true
 
-    // App 级 scenePhase 是所有 scene 的聚合状态。当前未开启 iPad 多窗口
-    // （无 UIApplicationSupportsMultipleScenes），单 scene 下与窗口状态等价；
-    // 若日后启用多窗口，隐私遮罩/自动锁定需下沉到 scene 级别
     @Environment(\.scenePhase) private var scenePhase
-    /// 最近一次进入后台的时间（用于自动锁定判定）
-    @State private var lastBackgroundedAt: Date?
 
     // MARK: - SwiftData Container
 
@@ -95,14 +90,8 @@ struct Private_AlbumApp: App {
                         .zIndex(1)
                 }
 
-                // 隐私遮罩：离开前台时盖住已解密内容，
-                // 防止系统为多任务切换器截取的快照泄露隐私
-                if authViewModel.isAuthenticated && scenePhase != .active && !showLaunchScreen {
-                    LaunchScreenView()
-                        .transition(.opacity)
-                        .zIndex(2)
-                }
             }
+            .background(PrivacySceneObserver(authentication: authViewModel))
             .task {
                 // 显示启动页1.5秒
                 try? await Task.sleep(nanoseconds: 1_500_000_000)
@@ -111,40 +100,10 @@ struct Private_AlbumApp: App {
                 }
             }
             .onChange(of: scenePhase) { _, newPhase in
-                switch newPhase {
-                case .background:
-                    lastBackgroundedAt = Date()
-                case .active:
-                    autoLockIfNeeded()
-                    AudioSessionController.shared.tick()
-                default:
-                    break
-                }
+                if newPhase == .active { AudioSessionController.shared.tick() }
             }
         }
         .modelContainer(sharedModelContainer)
     }
 
-    // MARK: - Auto Lock
-
-    /// 回到前台时按"离开后自动锁定"设置决定是否登出。
-    /// 只在真正进过后台（.background）后计时；短暂的 .inactive
-    /// （如下拉通知中心、来电）不触发锁定，但隐私遮罩仍会覆盖
-    private func autoLockIfNeeded() {
-        defer { lastBackgroundedAt = nil }
-
-        // 正在录音或存在未保存录音时，不执行自动锁定，确保长时间后台录音稳定不被销毁
-        guard !AudioSessionController.shared.hasRecording else { return }
-
-        guard authViewModel.isAuthenticated,
-            let backgroundedAt = lastBackgroundedAt
-        else { return }
-
-        let timeout = AppSettings.shared.autoLockTimeout
-        guard timeout != .never else { return }
-
-        if Date().timeIntervalSince(backgroundedAt) >= Double(timeout.rawValue) {
-            authViewModel.logout()
-        }
-    }
 }

@@ -20,3 +20,27 @@ build/
 .claude_memory/
 .omc/
 .claude/settings.local.json
+
+# Backup hygiene: rebuildable output and private machine state
+.DS_Store
+xcuserdata/
+*.xcuserstate
+*.p8
+*.p12
+*.pfx
+*.pem
+*.key
+*.cer
+*.der
+*.mobileprovision
+*.provisionprofile
+.env
+.env.*
+!.env.example
+.omc/
+.omx/state/
+__pycache__/
+*.pyc
+
+# Independently versioned website
+/marketing-site/

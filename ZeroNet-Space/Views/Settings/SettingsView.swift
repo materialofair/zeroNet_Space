@@ -676,7 +676,7 @@ struct AboutView: View {
                             .font(.largeTitle)
                             .fontWeight(.bold)
 
-                        Text("ZeroNet Space")
+                        Text("SealedPocket")
                             .font(.title3)
                             .foregroundColor(.secondary)
 
