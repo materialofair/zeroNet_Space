@@ -11,9 +11,12 @@ import SwiftData
 import SwiftUI
 
 struct SecretSpaceView: View {
+    @Environment(\.vaultUsesSidebar) private var usesSidebar
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \SecretNote.modifiedAt, order: .reverse) private var notes: [SecretNote]
     @EnvironmentObject private var guestModeManager: GuestModeManager
+
+    @EnvironmentObject private var authentication: AuthenticationViewModel
 
     private let draftManager = SecretNoteDraftManager.shared
 
@@ -22,6 +25,7 @@ struct SecretSpaceView: View {
             Group {
                 notesContent
             }
+            .toolbar(usesSidebar ? .hidden : .visible, for: .tabBar)
             .navigationTitle(String(localized: "secretSpace.title"))
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
@@ -31,6 +35,7 @@ struct SecretSpaceView: View {
                             createNoteEditor()
                         } label: {
                             Image(systemName: "plus")
+                                .accessibilityLabel(String(localized: "note.new"))
                         }
                     }
                 }
@@ -70,6 +75,8 @@ struct SecretSpaceView: View {
                 }
             }
             .listStyle(.insetGrouped)
+            .frame(maxWidth: 960)
+            .frame(maxWidth: .infinity)
         }
     }
 
@@ -86,6 +93,7 @@ struct SecretSpaceView: View {
     private var emptyState: some View {
         VStack(spacing: 16) {
             Image(systemName: "note.text")
+                .accessibilityHidden(true)
                 .font(.system(size: 60))
                 .foregroundColor(.secondary)
 
@@ -98,6 +106,7 @@ struct SecretSpaceView: View {
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
 
+            if guestModeManager.isOwnerMode {
             NavigationLink {
                 createNoteEditor()
             } label: {
@@ -109,6 +118,7 @@ struct SecretSpaceView: View {
                     .cornerRadius(8)
             }
             .padding(.top, 8)
+            }
         }
         .padding()
     }
@@ -117,7 +127,8 @@ struct SecretSpaceView: View {
 
     @ViewBuilder
     private func createNoteEditor() -> some View {
-        let draft = draftManager.loadDraft()
+        let draft = draftManager.loadDraft(ownerAuthenticated:
+            authentication.isAuthenticated && guestModeManager.isOwnerMode)
         NoteEditorView(
             initialTitle: draft?.title ?? "",
             initialContent: draft?.content ?? "",

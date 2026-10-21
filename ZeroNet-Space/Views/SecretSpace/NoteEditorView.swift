@@ -11,12 +11,16 @@ import SwiftUI
 struct NoteEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.dynamicTypeSize) private var typeSize
     @FocusState private var focusedField: Field?
 
     @State private var title: String
     @State private var content: String
     @State private var lastAutoSaved: Date?
     @State private var autoSaveTask: Task<Void, Never>?
+    @State private var didSave = false
+    @State private var hasPendingChanges = false
 
     let isNewNote: Bool
     let onSave: (String, String) -> Void
@@ -51,13 +55,15 @@ struct NoteEditorView: View {
                 contentSection
 
                 // 底部工具栏
-                bottomToolbar
+                if verticalSizeClass != .compact { bottomToolbar }
             }
         }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button(String(localized: "common.save")) {
+                    autoSaveTask?.cancel()
+                    didSave = true
                     onSave(title, content)
                     dismiss()
                 }
@@ -73,6 +79,14 @@ struct NoteEditorView: View {
         }
         .onChange(of: title) { _ in scheduleAutoSave() }
         .onChange(of: content) { _ in scheduleAutoSave() }
+        .onDisappear {
+            autoSaveTask?.cancel()
+            persistPendingChanges()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .vaultWillLock)) { _ in
+            autoSaveTask?.cancel()
+            persistPendingChanges()
+        }
     }
 
     // MARK: - View Components
@@ -91,11 +105,14 @@ struct NoteEditorView: View {
     /// 标题输入区域
     private var titleSection: some View {
         TextField(String(localized: "note.title.placeholder"), text: $title)
-            .font(.system(size: 24, weight: .bold))
+            .font(.title2.weight(.bold))
+            // Keep the editable body usable above a landscape keyboard. The body
+            // retains the full preferred size; only the one-line heading is capped.
+            .dynamicTypeSize(typeSize.isAccessibilitySize && verticalSizeClass == .compact ? .xxxLarge : typeSize)
             .textInputAutocapitalization(.sentences)
             .focused($focusedField, equals: .title)
             .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.vertical, verticalSizeClass == .compact ? 6 : 16)
             .background(Color.clear)
     }
 
@@ -103,7 +120,7 @@ struct NoteEditorView: View {
     private var contentSection: some View {
         ZStack(alignment: .topLeading) {
             TextEditor(text: $content)
-                .font(.system(size: 17))
+                .font(.body)
                 .lineSpacing(6)
                 .focused($focusedField, equals: .content)
                 .padding(.horizontal, 16)
@@ -113,7 +130,7 @@ struct NoteEditorView: View {
 
             if content.isEmpty {
                 Text(String(localized: "note.content.placeholder"))
-                    .font(.system(size: 17))
+                    .font(.body)
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
@@ -162,14 +179,22 @@ struct NoteEditorView: View {
     }
 
     private func scheduleAutoSave() {
+        hasPendingChanges = true
         autoSaveTask?.cancel()
-        autoSaveTask = Task.detached(priority: .background) { [title, content] in
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
-            await MainActor.run {
-                onAutoSave(title, content)
-                lastAutoSaved = Date()
-            }
+        autoSaveTask = Task { @MainActor [title, content] in
+            do { try await Task.sleep(nanoseconds: 1_000_000_000) }
+            catch { return }
+            guard !Task.isCancelled else { return }
+            onAutoSave(title, content)
+            hasPendingChanges = false
+            lastAutoSaved = Date()
         }
+    }
+
+    private func persistPendingChanges() {
+        guard !didSave, hasPendingChanges else { return }
+        onAutoSave(title, content)
+        hasPendingChanges = false
     }
 
     private func formatted(date: Date) -> String {

@@ -41,6 +41,7 @@ struct MediaDetailView: View {
     // 分享功能
     @State private var showShareSheet = false
     @State private var exportedURLs: [URL] = []
+    @State private var exportRequestID = UUID()
     @State private var isExporting = false
     @State private var exportError: String?
     @State private var showAlert = false
@@ -95,9 +96,17 @@ struct MediaDetailView: View {
         .safeAreaInset(edge: .top) {
             topTitleBar
         }
+        .onReceive(NotificationCenter.default.publisher(for: .vaultWillLock)) { _ in
+            exportRequestID = UUID()
+            showShareSheet = false
+            ExportService.shared.cleanupExportedFiles(exportedURLs)
+            exportedURLs.removeAll()
+        }
+        .onDisappear { exportRequestID = UUID() }
         .sheet(
             isPresented: $showShareSheet,
             onDismiss: {
+                ExportService.shared.cleanupExportedFiles(exportedURLs)
                 exportedURLs.removeAll()
             }
         ) {
@@ -552,7 +561,14 @@ struct MediaDetailView: View {
         isExporting = true
         exportError = nil
 
+        let generation = authViewModel.presentationGeneration
+        let requestID = UUID()
+        exportRequestID = requestID
         ExportService.shared.exportItems([mediaItem], password: password) { result in
+            guard authViewModel.canPresentSensitiveResult(generation) && exportRequestID == requestID else {
+                if case .success(let urls) = result { ExportService.shared.cleanupExportedFiles(urls) }
+                return
+            }
             switch result {
             case .success(let urls):
                 exportedURLs = urls

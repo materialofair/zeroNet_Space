@@ -20,44 +20,52 @@ struct LoginView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                // 背景色
-                ColorTheme.primaryBackground
+            GeometryReader { geometry in
+                ZStack {
+                    // 背景色
+                    ColorTheme.primaryBackground
+                        .ignoresSafeArea()
+
+                    // 装饰性渐变 (浅色模式)
+                    LinearGradient(
+                        colors: [ColorTheme.accent.opacity(0.1), Color.purple.opacity(0.1)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
                     .ignoresSafeArea()
+                    .opacity(colorScheme == .light ? 1 : 0.3)
 
-                // 装饰性渐变 (浅色模式)
-                LinearGradient(
-                    colors: [ColorTheme.accent.opacity(0.1), Color.purple.opacity(0.1)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-                .ignoresSafeArea()
-                .opacity(colorScheme == .light ? 1 : 0.3)
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            Spacer()
 
-                VStack(spacing: 24) {
-                    Spacer()
+                            // 头部图标
+                            headerSection
 
-                    // 头部图标
-                    headerSection
+                            // 零网络隐私提醒
+                            privacyNotice
 
-                    // 零网络隐私提醒
-                    privacyNotice
+                            // 密码输入区域
+                            passwordSection
 
-                    // 密码输入区域
-                    passwordSection
+                            // 登录按钮
+                            loginButton
 
-                    // 登录按钮
-                    loginButton
+                            // 隐私保护声明（紧凑版）
+                            privacyStatement
 
-                    // 隐私保护声明（紧凑版）
-                    privacyStatement
+                            Spacer()
 
-                    Spacer()
-
-                    // 忘记密码提示（底部）
-                    forgotPasswordHint
+                            // 忘记密码提示（底部）
+                            forgotPasswordHint
+                        }
+                        .padding()
+                        .frame(maxWidth: 600, minHeight: geometry.size.height)
+                        .frame(maxWidth: .infinity)
+                    }
+                    .scrollDismissesKeyboard(.interactively)
+                    .clipped()
                 }
-                .padding()
             }
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -217,7 +225,7 @@ struct LoginView: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 50)
+            .frame(minHeight: 50)
             .background(
                 viewModel.isLoginButtonEnabled
                     ? LinearGradient(

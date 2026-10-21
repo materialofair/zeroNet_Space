@@ -5,7 +5,8 @@ import UIKit
 nonisolated final class ThumbnailImageLoader: @unchecked Sendable {
     static let shared = ThumbnailImageLoader()
 
-    private let cache = NSCache<NSString, UIImage>()
+    private let cache = SensitiveImageCache(countLimit: 150, costLimit: 48 * 1_024 * 1_024)
+    private let decoder: @Sendable (Data, CGFloat) -> UIImage?
     private let decodeQueue: OperationQueue = {
         let queue = OperationQueue()
         queue.name = "com.zeronetspace.thumbnail-decoding"
@@ -14,10 +15,9 @@ nonisolated final class ThumbnailImageLoader: @unchecked Sendable {
         return queue
     }()
 
-    private init() {
-        cache.countLimit = 150
-        cache.totalCostLimit = 48 * 1_024 * 1_024
-    }
+    init(decoder: @escaping @Sendable (Data, CGFloat) -> UIImage? = {
+        ThumbnailImageLoader.decode(data: $0, maxPixelSize: $1)
+    }) { self.decoder = decoder }
 
     func image(
         for key: String,
@@ -28,7 +28,8 @@ nonisolated final class ThumbnailImageLoader: @unchecked Sendable {
         // 指纹取长度 + 首尾字节哈希，避免对大图做全量哈希。
         let fingerprint = "\(data.count)-\(data.prefix(64).hashValue)-\(data.suffix(64).hashValue)"
         let cacheKey = "\(key)-\(Int(maxPixelSize))-\(fingerprint)"
-        if let cachedImage = cache.object(forKey: cacheKey as NSString) {
+        let generation = cache.token()
+        if let cachedImage = cache.image(for: cacheKey) {
             return cachedImage
         }
 
@@ -39,15 +40,10 @@ nonisolated final class ThumbnailImageLoader: @unchecked Sendable {
 
         return await withCheckedContinuation { continuation in
             decodeQueue.addOperation { [weak self] in
-                let image = Self.decode(data: data, maxPixelSize: maxPixelSize)
-                if let image {
-                    let pixelWidth = Int(image.size.width * image.scale)
-                    let pixelHeight = Int(image.size.height * image.scale)
-                    self?.cache.setObject(
-                        image,
-                        forKey: cacheKey as NSString,
-                        cost: pixelWidth * pixelHeight * 4
-                    )
+                guard let self else { continuation.resume(returning: nil); return }
+                let decoded = self.decoder(data, maxPixelSize)
+                let image = decoded.flatMap {
+                    self.cache.insert($0, for: cacheKey, token: generation) ? $0 : nil
                 }
                 continuation.resume(returning: image)
             }
@@ -59,7 +55,7 @@ nonisolated final class ThumbnailImageLoader: @unchecked Sendable {
     /// 线程安全（NSCache 本身线程安全）。在登出等鉴权边界调用，
     /// 确保解密出的明文像素不在进程内残留。
     func clearAll() {
-        cache.removeAllObjects()
+        cache.clear()
     }
 
     static func decode(data: Data, maxPixelSize: CGFloat) -> UIImage? {

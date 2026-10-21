@@ -35,6 +35,7 @@ struct VideoPlayerView: View {
     @State private var decryptMessage: String = String(localized: "video.loading")
     @State private var isSharing: Bool = false
     @State private var exportedURLs: [URL] = []
+    @State private var exportRequestID = UUID()
     @State private var showShareSheet = false
     @State private var shareError: String?
     @State private var showShareAlert = false
@@ -223,9 +224,17 @@ struct VideoPlayerView: View {
                 isPlaying = false
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .vaultWillLock)) { _ in
+            exportRequestID = UUID()
+            showShareSheet = false
+            ExportService.shared.cleanupExportedFiles(exportedURLs)
+            exportedURLs.removeAll()
+        }
+        .onDisappear { exportRequestID = UUID() }
         .sheet(
             isPresented: $showShareSheet,
             onDismiss: {
+                ExportService.shared.cleanupExportedFiles(exportedURLs)
                 exportedURLs.removeAll()
             }
         ) {
@@ -320,6 +329,7 @@ struct VideoPlayerView: View {
 
         // 异步解密并创建播放器（持有 Task 引用，视图消失时可取消）
         loadTask?.cancel()
+        let generation = authViewModel.presentationGeneration
         loadTask = Task {
             do {
                 let storageService = FileStorageService.shared
@@ -330,7 +340,7 @@ struct VideoPlayerView: View {
                 )
 
                 // 视图已消失：立即清理解密出的临时文件，避免明文残留
-                if Task.isCancelled {
+                if Task.isCancelled || !authViewModel.canPresentSensitiveResult(generation) {
                     try? FileManager.default.removeItem(at: tempURL)
                     return
                 }
@@ -404,7 +414,14 @@ struct VideoPlayerView: View {
         isSharing = true
         shareError = nil
 
+        let generation = authViewModel.presentationGeneration
+        let requestID = UUID()
+        exportRequestID = requestID
         ExportService.shared.exportItems([video], password: password) { result in
+            guard authViewModel.canPresentSensitiveResult(generation) && exportRequestID == requestID else {
+                if case .success(let urls) = result { ExportService.shared.cleanupExportedFiles(urls) }
+                return
+            }
             switch result {
             case .success(let urls):
                 exportedURLs = urls

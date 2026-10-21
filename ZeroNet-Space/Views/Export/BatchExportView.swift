@@ -21,6 +21,7 @@ struct BatchExportView: View {
     @State private var isExporting: Bool = false
     @State private var showShareSheet: Bool = false
     @State private var exportedURLs: [URL] = []
+    @State private var exportRequestID = UUID()
     @State private var errorMessage: String?
     @State private var showError: Bool = false
     @State private var exportTotalCount: Int = 0
@@ -59,6 +60,13 @@ struct BatchExportView: View {
                     .disabled(selectedItems.isEmpty || isExporting)
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: .vaultWillLock)) { _ in
+                exportRequestID = UUID()
+                showShareSheet = false
+                ExportService.shared.cleanupExportedFiles(exportedURLs)
+                exportedURLs.removeAll()
+            }
+            .onDisappear { exportRequestID = UUID() }
             .sheet(isPresented: $showShareSheet) {
                 ShareSheet(items: exportedURLs)
             }
@@ -235,11 +243,15 @@ struct BatchExportView: View {
         // 执行导出
         exportErrorWasCancellation = false
 
+        let generation = authViewModel.presentationGeneration
+        let requestID = UUID()
+        exportRequestID = requestID
         exportService.exportItems(
             itemsToExport,
             password: password,
             progressHandler: { processed, total in
                 DispatchQueue.main.async {
+                    guard authViewModel.canPresentSensitiveResult(generation) && exportRequestID == requestID else { return }
                     self.exportedCount = processed
                     if processed < total {
                         self.exportStatusText = String(
@@ -252,6 +264,10 @@ struct BatchExportView: View {
                 }
             }
         ) { result in
+            guard authViewModel.canPresentSensitiveResult(generation) && exportRequestID == requestID else {
+                if case .success(let urls) = result { exportService.cleanupExportedFiles(urls) }
+                return
+            }
             switch result {
             case .success(let urls):
                 exportedURLs = urls
@@ -259,6 +275,10 @@ struct BatchExportView: View {
 
                 // 延迟显示分享界面
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    guard authViewModel.canPresentSensitiveResult(generation) && exportRequestID == requestID else {
+                        exportService.cleanupExportedFiles(urls)
+                        return
+                    }
                     isExporting = false
                     showShareSheet = true
                 }
@@ -355,6 +375,18 @@ struct ShareSheet: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIActivityViewController {
         let controller = ExportService.createShareController(for: items as! [URL])
         return controller
+    }
+
+    final class Coordinator {
+        var urls: [URL] = []
+    }
+    func makeCoordinator() -> Coordinator {
+        let coordinator = Coordinator()
+        coordinator.urls = items.compactMap { $0 as? URL }
+        return coordinator
+    }
+    static func dismantleUIViewController(_ uiViewController: UIActivityViewController, coordinator: Coordinator) {
+        ExportService.shared.cleanupExportedFiles(coordinator.urls)
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {

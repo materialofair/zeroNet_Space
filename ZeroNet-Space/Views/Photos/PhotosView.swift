@@ -10,6 +10,7 @@ import SwiftData
 import SwiftUI
 
 struct PhotosView: View {
+    @Environment(\.vaultUsesSidebar) private var usesSidebar
 
     // MARK: - Environment
 
@@ -43,11 +44,7 @@ struct PhotosView: View {
 
     // MARK: - Constants
 
-    private let columns = [
-        GridItem(.flexible(), spacing: 2),
-        GridItem(.flexible(), spacing: 2),
-        GridItem(.flexible(), spacing: 2),
-    ]
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     // MARK: - Body
 
@@ -56,13 +53,14 @@ struct PhotosView: View {
             ZStack {
                 // 访客模式下始终显示空状态
                 if guestModeManager.isGuestMode || photos.isEmpty {
-                    emptyStateView
+                    ScrollView { emptyStateView.frame(maxWidth: .infinity).padding(.vertical) }
                 } else if filteredPhotos.isEmpty {
                     searchEmptyView
                 } else {
                     photoGridView
                 }
             }
+            .toolbar(usesSidebar ? .hidden : .visible, for: .tabBar)
             .navigationTitle(String(localized: "photos.title"))
             .searchable(
                 text: $searchText,
@@ -96,6 +94,7 @@ struct PhotosView: View {
                                 showImportView = true
                             } label: {
                                 Image(systemName: "plus.circle.fill")
+                                    .accessibilityLabel(String(localized: "import.title"))
                                     .font(.title3)
                                     .symbolRenderingMode(.hierarchical)
                             }
@@ -215,6 +214,7 @@ struct PhotosView: View {
                     .frame(width: 140, height: 140)
 
                 Image(systemName: "photo.stack")
+                    .accessibilityHidden(true)
                     .font(.system(size: 60))
                     .foregroundStyle(
                         LinearGradient(
@@ -274,43 +274,53 @@ struct PhotosView: View {
     // MARK: - Photo Grid
 
     private var photoGridView: some View {
-        ScrollView {
-            LazyVGrid(columns: columns, spacing: 2) {
-                ForEach(filteredPhotos) { photo in
-                    if isSelectionMode {
-                        // 选择模式：点击切换选择状态
-                        Button {
-                            toggleSelection(for: photo)
-                        } label: {
-                            GridItemView(
-                                mediaItem: photo,
-                                isSelectionMode: true,
-                                isSelected: selectedPhotoIDs.contains(photo.id)
-                            )
-                            .aspectRatio(1, contentMode: .fill)
-                        }
-                        .buttonStyle(.plain)
-                    } else {
-                        // 正常模式：点击预览
-                        GridItemView(mediaItem: photo)
-                            .aspectRatio(1, contentMode: .fill)
-                            .onTapGesture {
-                                selectedPhoto = photo
+        GeometryReader { geometry in
+            ScrollView {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4),
+                                         count: AdaptiveVaultLayout.photoColumns(width: geometry.size.width,
+                                                                                accessibility: typeSize.isAccessibilitySize)), spacing: 4) {
+                    ForEach(filteredPhotos) { photo in
+                        if isSelectionMode {
+                            // 选择模式：点击切换选择状态
+                            Button {
+                                toggleSelection(for: photo)
+                            } label: {
+                                GridItemView(
+                                    mediaItem: photo,
+                                    isSelectionMode: true,
+                                    isSelected: selectedPhotoIDs.contains(photo.id)
+                                )
+                                .aspectRatio(1, contentMode: .fill)
                             }
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    photoToDelete = photo
-                                } label: {
-                                    Label(
-                                        String(localized: "common.delete"),
-                                        systemImage: "trash")
+                            .buttonStyle(.plain)
+                            .accessibilityLabel(photo.type.displayName)
+                            .accessibilityValue(photo.fileName)
+                            .accessibilityAddTraits(selectedPhotoIDs.contains(photo.id) ? .isSelected : [])
+                        } else {
+                            // 正常模式：点击预览
+                            Button { selectedPhoto = photo } label: {
+                                GridItemView(mediaItem: photo)
+                                    .aspectRatio(1, contentMode: .fill)
+                            }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel(photo.type.displayName)
+                            .accessibilityValue(photo.fileName)
+                                .accessibilityIdentifier("vault.photo.\(photo.id)")
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        photoToDelete = photo
+                                    } label: {
+                                        Label(
+                                            String(localized: "common.delete"),
+                                            systemImage: "trash")
+                                    }
                                 }
-                            }
+                        }
                     }
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
         }
     }
 

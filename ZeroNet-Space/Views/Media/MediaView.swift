@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct MediaView: View {
+    @Environment(\.vaultUsesSidebar) private var usesSidebar
 
     // MARK: - Environment
 
@@ -29,6 +30,7 @@ struct MediaView: View {
                     AudioView()
                 }
             }
+            .toolbar(usesSidebar ? .hidden : .visible, for: .tabBar)
             .navigationTitle(String(localized: "tab.media"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

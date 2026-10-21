@@ -18,6 +18,12 @@ final class AuthenticationViewModel: ObservableObject {
 
     /// 是否已认证
     @Published var isAuthenticated: Bool = false
+    private(set) var presentationGeneration = UUID()
+
+    func canPresentSensitiveResult(_ generation: UUID) -> Bool {
+        isAuthenticated && generation == presentationGeneration
+            && GuestModeManager.shared.isOwnerMode
+    }
 
     /// 是否已设置密码
     @Published var isPasswordSet: Bool = false
@@ -105,11 +111,13 @@ final class AuthenticationViewModel: ObservableObject {
     }
 
     private func handleDisguiseUnlock(mode: String, password: String) async {
+        let generation = presentationGeneration
         print("🔓 收到伪装模式解锁通知 - 模式: \(mode)")
 
         if mode == "guest" {
             // 访客模式解锁
             await MainActor.run {
+                guard generation == presentationGeneration else { return }
                 // 保存访客密码
                 sessionPasswordData = SecureBytes(password)
                 sessionLoginPassword = password
@@ -130,6 +138,7 @@ final class AuthenticationViewModel: ObservableObject {
                 }.value
 
                 await MainActor.run {
+                    guard generation == presentationGeneration else { return }
                     sessionPasswordData = SecureBytes(dataPassword)
                     sessionLoginPassword = password
                     isAuthenticated = true
@@ -301,6 +310,7 @@ final class AuthenticationViewModel: ObservableObject {
                     let dataPassword = try await Task.detached {
                         try self.keychainService.retrieveDataPassword(using: inputPassword)
                     }.value
+                    guard !Task.isCancelled else { return }
 
                     sessionPasswordData = SecureBytes(dataPassword)
                     sessionLoginPassword = inputPassword
@@ -369,6 +379,9 @@ final class AuthenticationViewModel: ObservableObject {
 
     /// 登出
     func logout() {
+        presentationGeneration = UUID()
+        loginTask?.cancel()
+        ExportService.shared.cancelCurrentExport()
         NotificationCenter.default.post(name: .vaultWillLock, object: self)
         isAuthenticated = false
 

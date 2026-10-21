@@ -44,11 +44,13 @@ class ExportService {
 
     private let encryptionService = EncryptionService.shared
     private let fileStorageService = FileStorageService.shared
-    private let exportQueue = DispatchQueue(label: "com.zeronetspace.export", qos: .userInitiated)
+    private let exportQueue: DispatchQueue
     private let workItemLock = NSLock()
     private var currentExportWorkItem: DispatchWorkItem?
 
-    private init() {}
+    init(exportQueue: DispatchQueue = DispatchQueue(label: "com.zeronetspace.export", qos: .userInitiated)) {
+        self.exportQueue = exportQueue
+    }
 
     // MARK: - Public Methods
 
@@ -76,9 +78,11 @@ class ExportService {
             guard let self, let workItem else { return }
 
             let result: Result<[URL], ExportError>
+            var requestDirectory: URL?
 
             do {
                 let exportDirectory = try self.createExportDirectory()
+                requestDirectory = exportDirectory
                 var exportedURLs: [URL] = []
                 let totalCount = items.count
                 var processedCount = 0
@@ -110,15 +114,17 @@ class ExportService {
                 result = .failure(.exportFailed)
             }
 
-            if workItem.isCancelled {
-                DispatchQueue.main.async {
-                    completion(.failure(.cancelled))
-                }
-                return
-            }
-
             DispatchQueue.main.async {
-                completion(result)
+                // Cancellation can race with the queued main-thread completion.
+                if workItem.isCancelled {
+                    if let requestDirectory { try? FileManager.default.removeItem(at: requestDirectory) }
+                    completion(.failure(.cancelled))
+                } else {
+                    if case .failure = result, let requestDirectory {
+                        try? FileManager.default.removeItem(at: requestDirectory)
+                    }
+                    completion(result)
+                }
             }
         }
 
@@ -128,18 +134,12 @@ class ExportService {
         exportQueue.async(execute: workItem)
     }
 
-    /// 清理临时导出文件
-    func cleanupExportedFiles() {
-        let tempDir = FileManager.default.temporaryDirectory
-        let exportDir = tempDir.appendingPathComponent("ZeroNetExport", isDirectory: true)
-
-        do {
-            if FileManager.default.fileExists(atPath: exportDir.path) {
-                try FileManager.default.removeItem(at: exportDir)
-                print("✅ 清理导出临时文件成功")
-            }
-        } catch {
-            print("❌ 清理导出临时文件失败: \(error)")
+    /// Only remove directories created by this export service for these URLs.
+    func cleanupExportedFiles(_ urls: [URL]) {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("ZeroNetExport", isDirectory: true).standardizedFileURL
+        for directory in Set(urls.map { $0.deletingLastPathComponent().standardizedFileURL }) {
+            guard directory.deletingLastPathComponent() == root else { continue }
+            try? FileManager.default.removeItem(at: directory)
         }
     }
 
@@ -159,18 +159,9 @@ class ExportService {
         let tempDir = FileManager.default.temporaryDirectory
         let exportDir = tempDir.appendingPathComponent("ZeroNetExport", isDirectory: true)
 
-        // 如果目录已存在,先删除
-        if FileManager.default.fileExists(atPath: exportDir.path) {
-            try FileManager.default.removeItem(at: exportDir)
-        }
-
-        // 创建新目录
-        try FileManager.default.createDirectory(
-            at: exportDir,
-            withIntermediateDirectories: true
-        )
-
-        return exportDir
+        let requestDirectory = exportDir.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: requestDirectory, withIntermediateDirectories: true)
+        return requestDirectory
     }
 
     /// 导出单个媒体项
@@ -250,13 +241,8 @@ extension ExportService {
         ]
 
         // 完成回调 - 清理临时文件
-        activityVC.completionWithItemsHandler = { _, completed, _, error in
-            if completed || error != nil {
-                // 延迟清理,确保系统完成文件访问
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                    ExportService.shared.cleanupExportedFiles()
-                }
-            }
+        activityVC.completionWithItemsHandler = { _, _, _, _ in
+            ExportService.shared.cleanupExportedFiles(urls)
         }
 
         return activityVC

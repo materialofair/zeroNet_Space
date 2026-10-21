@@ -26,6 +26,7 @@ struct PhotoDetailView: View {
     @State private var isDeleting = false
     @State private var isExporting = false
     @State private var exportedURLs: [URL] = []
+    @State private var exportRequestID = UUID()
     @State private var showShareSheet = false
     @State private var exportError: String?
     @State private var showExportError = false
@@ -102,9 +103,17 @@ struct PhotoDetailView: View {
         } message: {
             Text(exportError ?? String(localized: "common.unknownError"))
         }
+        .onReceive(NotificationCenter.default.publisher(for: .vaultWillLock)) { _ in
+            exportRequestID = UUID()
+            showShareSheet = false
+            ExportService.shared.cleanupExportedFiles(exportedURLs)
+            exportedURLs.removeAll()
+        }
+        .onDisappear { exportRequestID = UUID() }
         .sheet(
             isPresented: $showShareSheet,
             onDismiss: {
+                ExportService.shared.cleanupExportedFiles(exportedURLs)
                 exportedURLs.removeAll()
             }
         ) {
@@ -134,6 +143,9 @@ struct PhotoDetailView: View {
                     .clipShape(Circle())
             }
 
+            .accessibilityLabel(String(localized: "common.close"))
+            .accessibilityIdentifier("xmark")
+
             Spacer()
 
             // 操作按钮
@@ -150,6 +162,8 @@ struct PhotoDetailView: View {
                         .clipShape(Circle())
                 }
                 .disabled(isExporting)
+                .accessibilityLabel(String(localized: "common.share"))
+                .accessibilityIdentifier("square.and.arrow.up")
 
                 // 删除按钮
                 Button(role: .destructive) {
@@ -162,6 +176,8 @@ struct PhotoDetailView: View {
                         .background(Color.red.opacity(0.8))
                         .clipShape(Circle())
                 }
+                .accessibilityLabel(String(localized: "common.delete"))
+                .accessibilityIdentifier("trash")
             }
         }
         .padding()
@@ -251,7 +267,14 @@ struct PhotoDetailView: View {
 
         isExporting = true
 
+        let generation = authViewModel.presentationGeneration
+        let requestID = UUID()
+        exportRequestID = requestID
         ExportService.shared.exportItems([item], password: password) { result in
+            guard authViewModel.canPresentSensitiveResult(generation) && exportRequestID == requestID else {
+                if case .success(let urls) = result { ExportService.shared.cleanupExportedFiles(urls) }
+                return
+            }
             switch result {
             case .success(let urls):
                 exportedURLs = urls
@@ -488,6 +511,7 @@ struct ZoomableImageView: View {
     }
 
     private func loadImage() async {
+        let generation = authViewModel.presentationGeneration
         isLoading = true
         loadError = nil
 
@@ -497,6 +521,7 @@ struct ZoomableImageView: View {
                 password: authViewModel.sessionPassword ?? ""
             )
             await MainActor.run {
+                guard authViewModel.canPresentSensitiveResult(generation), !Task.isCancelled else { return }
                 self.loadedImage = image
                 self.isLoading = false
             }

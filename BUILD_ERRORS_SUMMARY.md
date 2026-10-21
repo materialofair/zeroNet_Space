@@ -67,3 +67,16 @@ Xcode / iOS 26.5 SDK，iPhone 17 模拟器。当前机器没有 iPhone 15 模拟
 `AudioUITests.testAudioNavigationRecordingPlaybackAndDelete` 在当前 iOS 26.5 模拟器的 `AVAudioRecorder.prepareToRecord()` 卡住。进程采样落在 AudioToolbox 的 `AudioQueueObject::ConnectToIONodeEffects` / `AQMixEngine_Base::DevLock` 等待；未执行到暂停、保存、重命名、删除等后续断言。切换模拟器输出设备及重启未解决，输出设备已恢复为原系统默认值。不将此用例计为通过，完整录音链路仍需要真机验收。
 
 本次改为只录音的 AVAudioSession.record 类别，播放时单独切换 playback；不启用后台持续录音。已有可解码音频的加密和解密测试通过，但不等同于麦克风硬件验收。
+
+
+# Duo 自适应与隐私呈现验证（2026-10-21，未发布开发版）
+
+本地分支 `codex/duo-adaptive-20261021`，隔离工作树 `SealedPocket-Duo`。完整记录见 `docs/duo-adaptation-2026-10-21.md`。
+
+- 最终 Debug 模拟器构建、未签名 iOS arm64 Release 构建成功；`verified-core.xcresult` 中 36 项 XCTest + 21 项 Swift Testing 通过、无跳过。
+- 稳定 iOS 26.5：iPhone 照片/文本导入、文本预览、笔记键盘/旋转、详情手动及快速锁定、应用切换卡片、分享后台锁定、错误密码、系统 Copy 导出和可读标签审计已有证据；iPad 分类/侧栏/键盘/旋转已有证据。
+- Duo：官方 Closed/Open 真实切换下草稿标题/正文/键盘、六项选择、搜索保持已验证。原始截图与 30 秒真实模拟器片段保存在工作区 evidence 目录。
+- 最大辅助字号暴露了固定登录页遮挡 Unlock 与横屏笔记正文高度为零，均已修复并回归通过；正文保留完整字号，紧凑高度仅限制单行标题并隐藏次要计数。
+- 不计为通过的场景：真机 Duo、iOS 17.6、PDF/视频完整 UI 锁定链路、访客凭据完整 UI 往返、完整 VoiceOver 手势、麦克风/来电/硬件录音、外部接收方/云服务导出、备份恢复。当前代码没有 LocalAuthentication 解锁，不能虚构生物识别失败/取消测试结果。
+- 官方 27.1 runtime 仍为 Ready / signatureState Unknown，既知 verify -67054 限制保留；未绕过、重签名、禁用检查、删除或重复下载。稳定 26.5 为 Ready / Verified。模拟器不等同于完整真机或运行时完整性验收。
+- 既有 SwiftData/Swift 6 并发及资源警告仍存在，不在此扩大修复范围。功能未上线，未推送或提审。

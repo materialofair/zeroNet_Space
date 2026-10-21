@@ -10,6 +10,7 @@ import SwiftData
 import SwiftUI
 
 struct FilesView: View {
+    @Environment(\.vaultUsesSidebar) private var usesSidebar
 
     // MARK: - Environment
 
@@ -44,11 +45,12 @@ struct FilesView: View {
             ZStack {
                 // 访客模式下始终显示空状态
                 if guestModeManager.isGuestMode || files.isEmpty {
-                    emptyStateView
+                    ScrollView { emptyStateView.frame(maxWidth: .infinity).padding(.vertical) }
                 } else {
                     fileListView
                 }
             }
+            .toolbar(usesSidebar ? .hidden : .visible, for: .tabBar)
             .navigationTitle(String(localized: "files.title"))
             .searchable(text: $searchText, prompt: String(localized: "files.search.placeholder"))
             .toolbar {
@@ -59,6 +61,7 @@ struct FilesView: View {
                             showImportView = true
                         } label: {
                             Image(systemName: "plus.circle.fill")
+                                    .accessibilityLabel(String(localized: "import.title"))
                                 .font(.title3)
                                 .symbolRenderingMode(.hierarchical)
                         }
@@ -153,6 +156,7 @@ struct FilesView: View {
                     .frame(width: 140, height: 140)
 
                 Image(systemName: "doc.text.fill")
+                .accessibilityHidden(true)
                     .font(.system(size: 60))
                     .foregroundStyle(
                         LinearGradient(
@@ -205,6 +209,9 @@ struct FilesView: View {
                     .onTapGesture {
                         selectedFile = file
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction { selectedFile = file }
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button(role: .destructive) {
                             fileToDelete = file
@@ -215,6 +222,8 @@ struct FilesView: View {
             }
         }
         .listStyle(.insetGrouped)
+            .frame(maxWidth: 960)
+            .frame(maxWidth: .infinity)
     }
 
     // MARK: - Computed Properties

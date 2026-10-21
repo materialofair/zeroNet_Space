@@ -22,6 +22,7 @@ struct FilePreviewView: View {
     @State private var fileContent: String?
     @State private var loadError: String?
     @State private var exportedURLs: [URL] = []
+    @State private var exportRequestID = UUID()
     @State private var showShareSheet = false
     @State private var exportError: String?
     @State private var showAlert = false
@@ -72,9 +73,17 @@ struct FilePreviewView: View {
         } message: {
             Text(alertMessage)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .vaultWillLock)) { _ in
+            exportRequestID = UUID()
+            showShareSheet = false
+            ExportService.shared.cleanupExportedFiles(exportedURLs)
+            exportedURLs.removeAll()
+        }
+        .onDisappear { exportRequestID = UUID() }
         .sheet(
             isPresented: $showShareSheet,
             onDismiss: {
+                ExportService.shared.cleanupExportedFiles(exportedURLs)
                 exportedURLs.removeAll()
             }
         ) {
@@ -172,6 +181,7 @@ struct FilePreviewView: View {
         isPdfLoading = true
         pdfLoadError = nil
 
+        let generation = authViewModel.presentationGeneration
         Task {
             do {
                 let decryptedData = try await FileStorageService.shared.loadDecryptedDataAsync(
@@ -181,11 +191,13 @@ struct FilePreviewView: View {
                 )
 
                 await MainActor.run {
+                    guard authViewModel.canPresentSensitiveResult(generation) else { return }
                     self.pdfData = decryptedData
                     self.isPdfLoading = false
                 }
             } catch {
                 await MainActor.run {
+                    guard authViewModel.canPresentSensitiveResult(generation) else { return }
                     self.pdfLoadError =
                         String(localized: "filePreview.error.decrypt")
                         + ": \(error.localizedDescription)"
@@ -271,6 +283,7 @@ struct FilePreviewView: View {
         isLoading = true
         loadError = nil
 
+        let generation = authViewModel.presentationGeneration
         Task {
             do {
                 let decryptedData = try await FileStorageService.shared.loadDecryptedDataAsync(
@@ -291,11 +304,13 @@ struct FilePreviewView: View {
                 }
 
                 await MainActor.run {
+                    guard authViewModel.canPresentSensitiveResult(generation) else { return }
                     self.fileContent = text
                     self.isLoading = false
                 }
             } catch {
                 await MainActor.run {
+                    guard authViewModel.canPresentSensitiveResult(generation) else { return }
                     self.loadError = String(
                         format: String(localized: "filePreview.error.decryptFailed"),
                         error.localizedDescription)
@@ -316,7 +331,14 @@ struct FilePreviewView: View {
         isExporting = true
         exportError = nil
 
+        let generation = authViewModel.presentationGeneration
+        let requestID = UUID()
+        exportRequestID = requestID
         ExportService.shared.exportItems([file], password: password) { result in
+            guard authViewModel.canPresentSensitiveResult(generation) && exportRequestID == requestID else {
+                if case .success(let urls) = result { ExportService.shared.cleanupExportedFiles(urls) }
+                return
+            }
             switch result {
             case .success(let urls):
                 exportedURLs = urls
