@@ -12,6 +12,7 @@ import SwiftUI
 struct PDFReaderView: View {
     let data: Data
     var onShare: (() -> Void)?
+    var showsTopControls: Bool
 
     @State private var pdfDocument: PDFDocument?
     @State private var currentPageIndex: Int = 0
@@ -19,10 +20,13 @@ struct PDFReaderView: View {
     @State private var showControls: Bool = true
     @State private var autoHideTask: Task<Void, Never>?
 
-    init(data: Data, onShare: (() -> Void)? = nil) {
+    init(data: Data, onShare: (() -> Void)? = nil, showsTopControls: Bool = true) {
         self.data = data
         self.onShare = onShare
-        _pdfDocument = State(initialValue: PDFDocument(data: data))
+        self.showsTopControls = showsTopControls
+        let document = PDFDocument(data: data)
+        _pdfDocument = State(initialValue: document)
+        _pageCount = State(initialValue: document?.pageCount ?? 0)
     }
 
     var body: some View {
@@ -42,7 +46,7 @@ struct PDFReaderView: View {
             }
 
             // 顶部控制条 - 浮动显示
-            if showControls {
+            if showControls && showsTopControls {
                 VStack {
                     topControlBar
                         .transition(.move(edge: .top).combined(with: .opacity))
@@ -59,6 +63,7 @@ struct PDFReaderView: View {
         .onAppear {
             resetAutoHide()
         }
+        .onDisappear { autoHideTask?.cancel() }
     }
 
     // MARK: - UI Components
@@ -240,8 +245,6 @@ struct PDFKitView: UIViewRepresentable {
 
         if let activeDocument = document ?? PDFDocument(data: data) {
             pdfView.document = activeDocument
-            pageCount = activeDocument.pageCount
-            currentPageIndex = 0
         }
 
         NotificationCenter.default.addObserver(
@@ -257,11 +260,6 @@ struct PDFKitView: UIViewRepresentable {
     func updateUIView(_ container: PDFContainerView, context: Context) {
         guard let document = container.pdfView.document else { return }
 
-        // 更新总页数
-        if pageCount != document.pageCount {
-            pageCount = document.pageCount
-        }
-
         // 根据当前页索引跳转
         if currentPageIndex >= 0 && currentPageIndex < document.pageCount {
             if let page = document.page(at: currentPageIndex),
@@ -273,6 +271,8 @@ struct PDFKitView: UIViewRepresentable {
     }
 
     static func dismantleUIView(_ uiView: PDFContainerView, coordinator: Coordinator) {
+        uiView.pdfView.document = nil
+        uiView.pdfView.delegate = nil
         NotificationCenter.default.removeObserver(
             coordinator,
             name: Notification.Name.PDFViewPageChanged,

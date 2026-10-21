@@ -2,6 +2,8 @@
 
 状态：**本地未发布开发版**。没有推送、上传、App Store Connect 修改、提审或公开发布。商店工作随下一次正常版本处理。
 
+> 后续状态：用户随后授权本次正常版本提审。以下保留开发阶段原始记录；新增 PDF/视频回归、签名 Archive、1.3.10 (23) 上传和最终审核状态以 [发布与审核回执](APP_STORE_DUO_RELEASE_2026-10-21.md) 为准。目前功能尚未公开上线，Git 没有推送。
+
 ## 工作区与范围
 
 - 原项目：`/Users/WangQiao/Desktop/github/ios-dev/ZeroNet-Space/openSource/zeroNet_Space`，起点 `bc76ab0`。
@@ -66,6 +68,10 @@
 ## 发布前仍须补齐
 
 真机 Duo、iOS 17.6、完整 VoiceOver 手势遍历、外部接收方/云服务导出、PDF/视频的实际 UI 播放与锁定链路、访客凭据的完整 UI 往返、备份恢复与系统生物识别交互不能由本次模拟器结果证明。当前代码未实现 LocalAuthentication 生物识别解锁，故不伪造 Face ID 失败/取消通过记录。录音硬件、来电、锁屏策略仍沿用既有记录中的硬件验收缺口。
+
+后续补验：`release-final-ui.xcresult` 的 PDF 打开后立即锁定、PDF 嵌套分享锁定、视频真实播放与嵌套分享锁定，以及正常演示内容准备，四项通过；`store-ipad-final.xcresult` 的 iPad PDF 嵌套分享锁定与内容截图两项通过。修正实际文件翻页器的最终解密会话检查与 PDF 重复顶部控件。`release-final-core.xcresult` 独立完成 57 项核心测试。仅这些列出的缺口获得补证，其余硬件/真机等限制没有消除。
+
+额外卡片验证：`release-switcher-pdf-video-3.xcresult` 的 PDF 单项、`release-video-switcher-final.xcresult` 的视频单项通过；真实敏感样例先可见，嵌套分享后的 SealedPocket 切换卡片样例像素均为 0，真实后台后返回锁定。切换器内 Home 未造成后台的早期测试失败保留；最终使用正常切换到专用模拟器系统设置并等待后台状态，不修改设置或降低断言。
 
 功能尚未上线。ASO 文案、本地化、商店规格与截图继承检查，以及后续版本说明均随下一次正常版本处理，不为本次文档或素材单独提审。
 
