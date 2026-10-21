@@ -109,3 +109,10 @@
 - 前往官方审核详情并刷新，状态“等待审核”，项目 iOS App 1.3.10 / 1.3.10 (23)；返回版本页再次看到“正在等待审核”、build 23、手动发布=1。没有点击取消提交或发布。
 - ASC 浏览器已明确释放给 PaperSnips；无活动上传或大构建，无后续浏览器操作。没有新审批、连接或网络阻塞。
 - 当前仍未上线；Apple 审核结果及后续手动发布不属于已完成事实。原真机/硬件及 runtime 完整性测试缺口保留。
+
+## Duo 专用栏位与标识边界 — 15:28 UTC 补记
+
+- 14 张包含普通 iPhone 6 张、iPad 6 张、**ASC 独立 iPhone Duo 截图栏位 2 张**，专用组上传后曾回读 2/10。不是把普通 iPhone/iPad 截图算作 Duo。
+- 英语默认素材：`evidence/store/duo/04-Duo-Expanded.png`（2853×2007，真实展开界面）及 `05-Duo-Compact-Notes.png`（1398×2034，真实合起界面）。简中未另行补拍有效 Duo 图，不能声称十语均有新 Duo 本地化图。
+- [Apple 2026-10-05 官方说明](https://developer.apple.com/news/?id=kkphp5qo) 表示提交 Duo 截图后商品页会显示适配标识；这不等同于编辑推荐。本版本尚待审核、未公开发布，公开 badge 尚未核实，没有提交 Featuring Nomination。
+- 已提交版本不撤回、不重复提交；浏览器仍释放给 PaperSnips。
