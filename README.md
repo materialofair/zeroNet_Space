@@ -1,5 +1,7 @@
 # 零网络空间 / ZeroNet Space
 
+> **Source snapshot / 源码快照:** [SealedPocket 1.3.11 (25): provenance, build, tests and limits](docs/source-1.3.11-build25.md)
+
 > **Official website / 官方网站:** [English](https://zeronet-space.materialofair.chatgpt.site/) · [中文](https://zeronet-space.materialofair.chatgpt.site/zh/) · [App Store](https://apps.apple.com/app/id6755504480)
 >
 > Keep photos, videos, documents, notes and recordings in a local encrypted vault on iPhone and iPad. No account or automatic cloud upload. Free allowance: 75 media/file items; optional one-time VIP purchase. Apple purchases and restoration require network access.

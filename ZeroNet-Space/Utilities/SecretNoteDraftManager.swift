@@ -11,13 +11,17 @@ struct SecretNoteDraft: Codable {
 final class SecretNoteDraftManager {
     static let shared = SecretNoteDraftManager()
     private let legacyDraftKey = "secretSpace.draft"
-    private let keychainService = KeychainService.shared
+    private let keychainService: KeychainService
+    private let defaults: UserDefaults
 
-    private init() {
+    init(keychainService: KeychainService = .shared, defaults: UserDefaults = .standard) {
+        self.keychainService = keychainService
+        self.defaults = defaults
         migrateLegacyDraftFromUserDefaults()
     }
 
-    func loadDraft() -> SecretNoteDraft? {
+    func loadDraft(ownerAuthenticated: Bool) -> SecretNoteDraft? {
+        guard ownerAuthenticated, GuestModeManager.shared.isOwnerMode else { return nil }
         guard let data = keychainService.loadSecretNoteDraft() else { return nil }
         return try? JSONDecoder().decode(SecretNoteDraft.self, from: data)
     }
@@ -43,7 +47,6 @@ final class SecretNoteDraftManager {
     /// Keychain 写入可能失败（如锁屏时冷启动），确认迁移成功才删除旧数据，
     /// 失败则保留旧值，等下次启动重试
     private func migrateLegacyDraftFromUserDefaults() {
-        let defaults = UserDefaults.standard
         guard let data = defaults.data(forKey: legacyDraftKey) else { return }
         let migrated =
             keychainService.loadSecretNoteDraft() != nil

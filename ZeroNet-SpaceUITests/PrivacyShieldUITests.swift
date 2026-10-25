@@ -33,6 +33,11 @@ final class PrivacyShieldUITests: XCTestCase {
             return count
         }
     }
+    @MainActor private func selectCategory(_ name: String, index: Int, in app: XCUIApplication) {
+        let sidebar = app.buttons["vault.category.\(index)"]
+        if sidebar.exists && sidebar.isHittable { sidebar.tap() }
+        else { app.buttons[name].firstMatch.tap() }
+    }
     @MainActor private func capture(_ app: XCUIApplication, _ name: String) {
         let screenshot = app.screenshot()
         let attachment = XCTAttachment(screenshot: screenshot); attachment.name = name; attachment.lifetime = .keepAlways; add(attachment)
@@ -44,8 +49,9 @@ final class PrivacyShieldUITests: XCTestCase {
         let app = XCUIApplication(); app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]; app.launch()
         XCTAssertTrue(app.secureTextFields["Enter password"].waitForExistence(timeout: 10))
         app.secureTextFields["Enter password"].tap(); app.secureTextFields["Enter password"].typeText("Pocket7391"); app.buttons["Unlock"].tap()
-        XCTAssertTrue(app.tabBars.buttons["Photos"].waitForExistence(timeout: 10)); app.tabBars.buttons["Photos"].tap()
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.17, dy: 0.33)).tap()
+        XCTAssertTrue(app.buttons["Photos"].firstMatch.waitForExistence(timeout: 10)); selectCategory("Photos", index: 0, in: app)
+        let photo = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "vault.photo.")).firstMatch
+        XCTAssertTrue(photo.waitForExistence(timeout: 5)); photo.tap()
         XCTAssertTrue(app.buttons["trash"].waitForExistence(timeout: 5))
         capture(app, "baseline-detail-visible")
         XCTAssertGreaterThan(samplePixelCount(app.screenshot()), 10000, "Fixture must be visible before protection assertion")
@@ -72,15 +78,16 @@ final class PrivacyShieldUITests: XCTestCase {
         let field = app.secureTextFields["Enter password"]
         XCTAssertTrue(field.waitForExistence(timeout: 10)); XCTAssertTrue(field.isHittable)
         field.tap(); field.typeText("Pocket7391"); app.buttons["Unlock"].tap()
-        XCTAssertTrue(app.tabBars.buttons["Photos"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["Photos"].firstMatch.waitForExistence(timeout: 10))
     }
     @MainActor private func openSample(_ app: XCUIApplication) {
-        app.tabBars.buttons["Photos"].tap()
-        app.coordinate(withNormalizedOffset: CGVector(dx: 0.17, dy: 0.33)).tap()
+        selectCategory("Photos", index: 0, in: app)
+        let photo = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "vault.photo.")).firstMatch
+        XCTAssertTrue(photo.waitForExistence(timeout: 5)); photo.tap()
         XCTAssertTrue(app.buttons["trash"].waitForExistence(timeout: 5)); XCTAssertTrue(app.buttons["trash"].isHittable)
     }
     @MainActor private func settings(_ app: XCUIApplication) {
-        app.tabBars.buttons["Settings"].tap()
+        selectCategory("Settings", index: 4, in: app)
         for _ in 0..<6 {
             if app.buttons["Log Out"].isHittable { break }
             app.swipeUp()
@@ -92,7 +99,7 @@ final class PrivacyShieldUITests: XCTestCase {
         app.buttons.containing(NSPredicate(format: "label BEGINSWITH %@", "Auto-Lock When Leaving")).firstMatch.tap()
         XCTAssertTrue(app.buttons[title].waitForExistence(timeout: 3)); app.buttons[title].tap()
         capture(app, "setting-" + title)
-        app.tabBars.buttons["Photos"].tap()
+        selectCategory("Photos", index: 0, in: app)
     }
     @MainActor private func homeAndReturnLocked(_ app: XCUIApplication, _ label: String, delay: UInt32 = 500_000) {
         print("FIX_EVENT \(Date().timeIntervalSince1970) \(label)-home-begin")
@@ -109,7 +116,7 @@ final class PrivacyShieldUITests: XCTestCase {
         continueAfterFailure = false
         let app = launchDemo(); login(app); settings(app)
         app.buttons["Log Out"].tap(); XCTAssertTrue(app.sheets.firstMatch.waitForExistence(timeout: 3)); app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.25)).tap()
-        XCTAssertTrue(app.tabBars.buttons["Photos"].isHittable, "Cancelling logout preserves the session")
+        XCTAssertTrue(app.buttons["Photos"].firstMatch.isHittable, "Cancelling logout preserves the session")
         capture(app, "cancelled-logout-still-authenticated")
         app.buttons["Log Out"].tap(); app.sheets.buttons["Log Out"].tap()
         XCTAssertTrue(app.secureTextFields["Enter password"].waitForExistence(timeout: 5)); capture(app, "manual-before-home")

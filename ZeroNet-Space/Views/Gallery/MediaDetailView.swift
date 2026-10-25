@@ -41,6 +41,7 @@ struct MediaDetailView: View {
     // 分享功能
     @State private var showShareSheet = false
     @State private var exportedURLs: [URL] = []
+    @State private var exportRequestID = UUID()
     @State private var isExporting = false
     @State private var exportError: String?
     @State private var showAlert = false
@@ -95,9 +96,22 @@ struct MediaDetailView: View {
         .safeAreaInset(edge: .top) {
             topTitleBar
         }
+        .onReceive(NotificationCenter.default.publisher(for: .vaultWillLock)) { _ in
+            exportRequestID = UUID()
+            showShareSheet = false
+            showFullScreenVideoPlayer = false
+            decryptedData = nil
+            decryptedImage = nil
+            cleanupVideoPlayer()
+            cleanupDocumentTempFile()
+            ExportService.shared.cleanupExportedFiles(exportedURLs)
+            exportedURLs.removeAll()
+        }
+        .onDisappear { exportRequestID = UUID() }
         .sheet(
             isPresented: $showShareSheet,
             onDismiss: {
+                ExportService.shared.cleanupExportedFiles(exportedURLs)
                 exportedURLs.removeAll()
             }
         ) {
@@ -320,7 +334,7 @@ struct MediaDetailView: View {
 
     private func pdfDocumentView(data: Data) -> some View {
         // PDF阅读器全屏显示，不添加额外的信息栏
-        PDFReaderView(data: data, onShare: shareMedia)
+        PDFReaderView(data: data, onShare: shareMedia, showsTopControls: false)
             .ignoresSafeArea()
     }
 
@@ -444,6 +458,8 @@ struct MediaDetailView: View {
 
     /// 加载并解密媒体
     private func loadAndDecryptMedia() async {
+        let generation = authViewModel.presentationGeneration
+        guard authViewModel.canPresentSensitiveResult(generation) else { return }
         print("🔓 开始加载和解密媒体...")
         print("📁 文件类型: \(mediaItem.type.rawValue)")
         print("📄 文件名: \(mediaItem.fullFileName)")
@@ -489,6 +505,10 @@ struct MediaDetailView: View {
                 )
 
                 await MainActor.run {
+                    guard !Task.isCancelled, authViewModel.canPresentSensitiveResult(generation) else {
+                        try? FileManager.default.removeItem(at: tempURL)
+                        return
+                    }
                     self.isLoading = false
                     self.setupVideoPlayer(url: tempURL)
                     print("🎬 视频临时文件已就绪: \(tempURL.lastPathComponent)")
@@ -511,6 +531,7 @@ struct MediaDetailView: View {
                 )
 
                 await MainActor.run {
+                    guard !Task.isCancelled, authViewModel.canPresentSensitiveResult(generation) else { return }
                     guard let image = image else {
                         self.errorMessage = MediaLoaderError.invalidImageData.localizedDescription
                         self.isLoading = false
@@ -525,6 +546,7 @@ struct MediaDetailView: View {
             }
 
             await MainActor.run {
+                guard !Task.isCancelled, authViewModel.canPresentSensitiveResult(generation) else { return }
                 self.decryptedData = data
                 self.isLoading = false
                 print("✅ 媒体数据已加载到视图")
@@ -532,6 +554,7 @@ struct MediaDetailView: View {
 
         } catch {
             await MainActor.run {
+                guard !Task.isCancelled, authViewModel.canPresentSensitiveResult(generation) else { return }
                 self.errorMessage = error.localizedDescription
                 self.isLoading = false
             }
@@ -552,7 +575,14 @@ struct MediaDetailView: View {
         isExporting = true
         exportError = nil
 
+        let generation = authViewModel.presentationGeneration
+        let requestID = UUID()
+        exportRequestID = requestID
         ExportService.shared.exportItems([mediaItem], password: password) { result in
+            guard authViewModel.canPresentSensitiveResult(generation) && exportRequestID == requestID else {
+                if case .success(let urls) = result { ExportService.shared.cleanupExportedFiles(urls) }
+                return
+            }
             switch result {
             case .success(let urls):
                 exportedURLs = urls
@@ -643,6 +673,8 @@ struct MediaDetailView: View {
 
     /// 保存临时文件（用于文档预览）
     private func prepareDocumentTempFile(data: Data) async {
+        let generation = authViewModel.presentationGeneration
+        guard !Task.isCancelled, authViewModel.canPresentSensitiveResult(generation) else { return }
         // 避免重复创建
         if documentTempURL != nil {
             return
@@ -656,6 +688,10 @@ struct MediaDetailView: View {
             // 明文文档临时文件使用最高文件保护级别，防止锁屏后被读取
             try data.write(to: tempURL, options: [.atomic, .completeFileProtection])
             await MainActor.run {
+                guard !Task.isCancelled, authViewModel.canPresentSensitiveResult(generation) else {
+                    try? FileManager.default.removeItem(at: tempURL)
+                    return
+                }
                 documentTempURL = tempURL
             }
             print("📄 文档临时文件已创建: \(tempURL.lastPathComponent)")
@@ -700,8 +736,10 @@ struct MediaDetailView: View {
                     Image(systemName: "square.and.arrow.up")
                         .font(.title3)
                         .foregroundColor(.white)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
                 }
+                .accessibilityIdentifier("vault.preview.share")
+                .accessibilityLabel(String(localized: "common.share"))
 
                 Button(role: .destructive) {
                     showDeleteConfirmation = true
@@ -709,8 +747,9 @@ struct MediaDetailView: View {
                     Image(systemName: "trash")
                         .font(.title3)
                         .foregroundColor(.white)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 44, height: 44)
                 }
+                .accessibilityIdentifier("vault.preview.delete")
             }
             .padding(.horizontal, 20)
             .padding(.top, 10)

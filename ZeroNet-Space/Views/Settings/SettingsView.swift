@@ -10,6 +10,7 @@ import SwiftData
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(\.vaultUsesSidebar) private var usesSidebar
 
     // MARK: - Environment
 
@@ -51,7 +52,10 @@ struct SettingsView: View {
                 // 关于
                 aboutSection
             }
+            .toolbar(usesSidebar ? .hidden : .visible, for: .tabBar)
             .navigationTitle(String(localized: "settings.title"))
+            .frame(maxWidth: 960)
+            .frame(maxWidth: .infinity)
         }
         .confirmationDialog(
             String(localized: "settings.logout.title"), isPresented: $showLogoutConfirmation

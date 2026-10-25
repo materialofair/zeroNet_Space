@@ -91,6 +91,7 @@ final class PrivacyWindowCover {
         view.isOpaque = true
         view.layer.zPosition = 10_000
         view.isAccessibilityElement = true
+        view.accessibilityViewIsModal = true
         view.accessibilityIdentifier = "privacy-shield"
         view.accessibilityLabel = "SealedPocket"
         view.autoresizingMask = [.flexibleWidth, .flexibleHeight]

@@ -41,7 +41,7 @@ struct VideosView: View {
         ZStack {
             // 访客模式下始终显示空状态
             if guestModeManager.isGuestMode || videos.isEmpty {
-                emptyStateView
+                ScrollView { emptyStateView.frame(maxWidth: .infinity).padding(.vertical) }
             } else {
                 videoListView
             }
@@ -54,6 +54,7 @@ struct VideosView: View {
                         showImportView = true
                     } label: {
                         Image(systemName: "plus.circle.fill")
+                                    .accessibilityLabel(String(localized: "import.title"))
                             .font(.title3)
                             .symbolRenderingMode(.hierarchical)
                     }
@@ -142,6 +143,7 @@ struct VideosView: View {
                     .frame(width: 140, height: 140)
 
                 Image(systemName: "play.rectangle.fill")
+                .accessibilityHidden(true)
                     .font(.system(size: 60))
                     .foregroundStyle(
                         LinearGradient(
@@ -191,12 +193,14 @@ struct VideosView: View {
 
     private var videoListView: some View {
         ScrollView {
-            LazyVStack(spacing: 12) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: 16)], spacing: 16) {
                 ForEach(videos) { video in
-                    VideoCardView(video: video)
-                        .onTapGesture {
-                            selectedVideo = video
-                        }
+                    Button { selectedVideo = video } label: {
+                        VideoCardView(video: video)
+                    }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(video.type.displayName)
+                        .accessibilityValue(video.fileName)
                         .contextMenu {
                             Button(role: .destructive) {
                                 videoToDelete = video

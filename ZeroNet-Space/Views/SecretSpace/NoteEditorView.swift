@@ -1,198 +1,218 @@
-/*@ai:risk=2|deps=SecretNote|lines=160*/
-//
-//  NoteEditorView.swift
-//  ZeroNet-Space
-//
-//  简洁的笔记编辑界面
-//
-
 import SwiftUI
+import SwiftData
 
 struct NoteEditorView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
-    @FocusState private var focusedField: Field?
+    @Environment(\.modelContext) private var context
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.colorScheme) private var scheme
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @EnvironmentObject private var authentication: AuthenticationViewModel
+    @EnvironmentObject private var guest: GuestModeManager
+    @StateObject private var model: DiaryEditorModel
+    @StateObject private var pdf = DiaryPDFExportModel()
+    @ObservedObject private var settings = AppSettings.shared
+    @State private var picker = false
+    @State private var insertion = NSRange(location: 0, length: 0)
+    @State private var selectedPhoto: DiaryDocument.Photo?
+    @State private var selectedRange = NSRange(location: 0, length: 0)
+    @State private var photoActions = false
+    @State private var fullPhoto: DiaryDocument.Photo?
+    @State private var moving: UUID?
 
-    @State private var title: String
-    @State private var content: String
-    @State private var lastAutoSaved: Date?
-    @State private var autoSaveTask: Task<Void, Never>?
-
-    let isNewNote: Bool
-    let onSave: (String, String) -> Void
-    let onAutoSave: (String, String) -> Void
-
-    init(
-        initialTitle: String, initialContent: String, isNewNote: Bool,
-        onSave: @escaping (String, String) -> Void,
-        onAutoSave: @escaping (String, String) -> Void
-    ) {
-        self._title = State(initialValue: initialTitle)
-        self._content = State(initialValue: initialContent)
-        self.isNewNote = isNewNote
-        self.onSave = onSave
-        self.onAutoSave = onAutoSave
+    init(document: DiaryDocument, editing: Bool = false, legacy: Bool = false, legacyDraft: Bool = false,
+         expectedModifiedAt: Date? = nil, sourceRecoveryID: UUID? = nil) {
+        _model = StateObject(wrappedValue: DiaryEditorModel(document: document, editing: editing,
+            legacy: legacy, clearLegacyDraft: legacyDraft, expectedModifiedAt: expectedModifiedAt,
+            sourceRecoveryID: sourceRecoveryID))
     }
 
     var body: some View {
-        ZStack {
-            // 纸张风格背景
-            paperBackground
-                .ignoresSafeArea()
-
-            VStack(spacing: 0) {
-                // 标题输入框
-                titleSection
-
-                Divider()
-                    .padding(.horizontal)
-
-                // 内容编辑器
-                contentSection
-
-                // 底部工具栏
-                bottomToolbar
+        VStack(spacing: 0) {
+            if !model.revoked {
+                if model.editing && model.isLegacy {
+                    Text(String(localized: "diary.legacy"))
+                        .font(.caption).foregroundStyle(.secondary).padding(.horizontal).padding(.bottom, 4)
+                }
+                if let source = moving {
+                    HStack {
+                        Text(String(localized: "diary.moveHint")).font(.caption)
+                        Spacer()
+                        Button(String(localized: "diary.moveHere")) {
+                            model.text.move(photoID: source, to: model.text.selection.location); moving = nil
+                        }.accessibilityIdentifier("diary.moveHere")
+                        Button(String(localized: "common.cancel")) { moving = nil }
+                    }.padding(12)
+                }
+                DiaryTextView(controller: model.text, document: model.document, editing: model.editing, heading: AnyView(heading),
+                    onChange: { [weak model] in model?.changed() }, onPhoto: { range, photo in
+                        guard model.authorized else { return }
+                        if model.editing {
+                            selectedRange = range; selectedPhoto = photo; photoActions = true
+                        } else { fullPhoto = photo }
+                    })
+                    .frame(maxWidth: 800).frame(maxWidth: .infinity)
+                    .disabled(model.importing)
+                if model.importing {
+                    HStack {
+                        ProgressView(value: Double(model.importProgress), total: Double(max(1, model.importTotal)))
+                        Text("\(model.importProgress)/\(model.importTotal)").font(.caption).monospacedDigit()
+                        Button(String(localized: "common.cancel")) { model.cancelImport() }
+                    }.padding()
+                }
+                if pdf.generating {
+                    HStack {
+                        ProgressView()
+                        Text(String(localized: "diary.pdf.generating")).font(.caption)
+                        Spacer()
+                        Button(String(localized: "common.cancel")) { pdf.cancel() }
+                    }.padding(12).accessibilityIdentifier("diary.pdf.progress")
+                }
+                if model.editing { editingToolbar }
             }
         }
+        .modifier(DiaryPrivateInput())
+        .background(scheme == .dark ? Color(uiColor: .systemBackground) : Color(red: 1, green: 0.99, blue: 0.97))
         .navigationBarTitleDisplayMode(.inline)
+        .background(DiaryBackGesture(canLeave: {
+            guard model.authorized, !model.importing else { return false }
+            pdf.cancel()
+            return model.flush()
+        }, onBack: { dismiss() }).frame(width: 0, height: 0))
         .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    guard model.authorized else { return }
+                    model.text.hideKeyboard()
+                    pdf.start(model.snapshot())
+                } label: { Image(systemName: "square.and.arrow.up") }
+                    .accessibilityLabel(String(localized: "diary.pdf.export"))
+                    .accessibilityIdentifier("diary.exportPDF")
+                    .disabled(model.importing || model.revoked || pdf.generating)
+            }
             ToolbarItem(placement: .confirmationAction) {
-                Button(String(localized: "common.save")) {
-                    onSave(title, content)
-                    dismiss()
-                }
-                .fontWeight(.semibold)
-                .disabled(
-                    title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        && content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                )
+                Button(String(localized: model.editing ? "common.done" : "diary.edit")) {
+                    if model.editing {
+                        if model.flush() { model.editing = false; moving = nil }
+                    } else { model.editing = true }
+                }.accessibilityIdentifier("diary.editDone").disabled(model.importing || model.revoked)
             }
         }
+        .sheet(isPresented: $picker) {
+            DiaryPhotoPicker(limit: max(1, 20 - model.snapshot().photoCount)) { results in
+                picker = false
+                if results.isEmpty, model.authorized {
+                    model.text.view?.selectedRange = insertion
+                    model.text.view?.becomeFirstResponder()
+                }
+                model.beginImport(results, at: insertion)
+            }
+        }
+        .sheet(isPresented: $pdf.needsVIP) { DiaryPDFVIPView() }
+        .sheet(item: $pdf.share) { item in
+            DiaryPDFShareSheet(item: item, isAllowed: { pdf.canShare(item) }, finished: { pdf.cancel() })
+        }
+        .fullScreenCover(item: $fullPhoto) { photo in
+            DiaryFullPhotoView(photo: photo)
+        }
+        .confirmationDialog(String(localized: "diary.photoActions"), isPresented: $photoActions, titleVisibility: .visible) {
+            Button(String(localized: "diary.viewPhoto")) { fullPhoto = selectedPhoto }
+            Button(String(localized: "diary.writeAbove")) { model.text.write(above: true, imageRange: selectedRange) }
+            Button(String(localized: "diary.writeBelow")) { model.text.write(above: false, imageRange: selectedRange) }
+            Button(String(localized: "diary.movePhoto")) { moving = selectedPhoto?.id; model.text.view?.becomeFirstResponder() }
+            Button(String(localized: "diary.removePhoto"), role: .destructive) {
+                model.text.replace(selectedRange, with: NSAttributedString(string: "")); selectedPhoto = nil
+            }
+            Button(String(localized: "common.cancel"), role: .cancel) { selectedPhoto = nil }
+        }
+        .alert(String(localized: "common.error"), isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
+            if model.conflicted { Button(String(localized: "diary.saveCopy")) { _ = model.saveAsCopy() } }
+            if model.canRetryImport { Button(String(localized: "diary.retry")) { model.retryImport() } }
+            Button(String(localized: "common.ok"), role: .cancel) { model.error = nil }
+        } message: { Text(model.error ?? "") }
         .onAppear {
-            focusedField = .content
+            model.configure(container: context.container, authentication: authentication)
+            pdf.configure(session: authentication, isVIP: { AppSettings.shared.isVIP })
         }
-        .onChange(of: title) { _ in scheduleAutoSave() }
-        .onChange(of: content) { _ in scheduleAutoSave() }
-    }
-
-    // MARK: - View Components
-
-    /// 纸张风格背景
-    private var paperBackground: some View {
-        Group {
-            if colorScheme == .light {
-                Color(red: 1.0, green: 0.98, blue: 0.94)  // 米黄色纸张
-            } else {
-                Color(red: 0.15, green: 0.15, blue: 0.15)  // 深灰色
+        .onChange(of: pdf.error) { _, error in if let error { model.error = error } }
+        .onChange(of: settings.hasUnlockedUnlimited) { _, value in if !value { pdf.cancel() } }
+        .onChange(of: model.document.title) { _, _ in model.changed() }
+        .onChange(of: guest.currentMode) { _, mode in
+            if mode != .owner {
+                picker = false; photoActions = false; fullPhoto = nil; selectedPhoto = nil; moving = nil
+                model.revoke()
+                pdf.cancel()
             }
         }
-    }
-
-    /// 标题输入区域
-    private var titleSection: some View {
-        TextField(String(localized: "note.title.placeholder"), text: $title)
-            .font(.system(size: 24, weight: .bold))
-            .textInputAutocapitalization(.sentences)
-            .focused($focusedField, equals: .title)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(Color.clear)
-    }
-
-    /// 内容编辑区域
-    private var contentSection: some View {
-        ZStack(alignment: .topLeading) {
-            TextEditor(text: $content)
-                .font(.system(size: 17))
-                .lineSpacing(6)
-                .focused($focusedField, equals: .content)
-                .padding(.horizontal, 16)
-                .padding(.top, 12)
-                .scrollContentBackground(.hidden)
-                .background(Color.clear)
-
-            if content.isEmpty {
-                Text(String(localized: "note.content.placeholder"))
-                    .font(.system(size: 17))
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
-                    .allowsHitTesting(false)
+        .onChange(of: scenePhase) { _, phase in
+            if phase != .active {
+                _ = model.flush(explicitCommit: false)
+                if pdf.share == nil { pdf.cancel() }
             }
+        }
+        .onDisappear {
+            _ = model.flush(explicitCommit: false); model.cancelImport()
+            if pdf.share == nil { pdf.cancel() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .vaultWillLock)) { _ in
+            picker = false; photoActions = false; fullPhoto = nil; selectedPhoto = nil; moving = nil
+            model.revoke()
+            pdf.cancel()
         }
     }
 
-    /// 底部工具栏
-    private var bottomToolbar: some View {
-        HStack {
-            // 字数统计
-            HStack(spacing: 4) {
-                Image(systemName: "doc.text")
-                    .font(.caption2)
-                Text(String(format: String(localized: "note.wordCount"), content.count))
-                    .font(.caption)
+    private var heading: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(model.document.entryDate, format: .dateTime.year().month().day())
+                .font(.footnote).foregroundStyle(.secondary)
+            if model.editing {
+                TextField(String(localized: "diary.optionalTitle"), text: $model.document.title, axis: .vertical)
+                    .font(.title.weight(.semibold))
+                    .fixedSize(horizontal: false, vertical: true).autocorrectionDisabled()
+                    .accessibilityIdentifier("diary.title")
+            } else if !model.document.title.isEmpty {
+                Text(model.document.title).font(.title.weight(.semibold)).fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("diary.title.read")
             }
-            .foregroundColor(.secondary)
+        }.padding(.horizontal, 22).padding(.top, 12).padding(.bottom, 8)
+            .frame(maxWidth: 800, alignment: .leading).frame(maxWidth: .infinity)
+    }
 
-            Spacer()
+    private var editingToolbar: some View {
+        DiaryFormattingBar(text: model.text, status: model.status, addPhotos: {
+            guard model.snapshot().photoCount < 20 else { return }
+            insertion = model.text.selection
+            model.text.hideKeyboard(); picker = true
+        }, importing: model.importing)
+    }
 
-            // 自动保存状态
-            if let lastSaved = lastAutoSaved {
-                HStack(spacing: 4) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.caption2)
-                        .foregroundColor(.green)
-                    Text(
-                        String(
-                            format: String(localized: "note.lastSaved"),
-                            formatted(date: lastSaved))
-                    )
-                    .font(.caption2)
-                }
-                .foregroundColor(.secondary)
+}
+
+private struct DiaryFullPhotoView: View {
+    let photo: DiaryDocument.Photo
+    @Environment(\.dismiss) private var dismiss
+    @State private var revoked = false
+    var body: some View {
+        NavigationStack {
+            GeometryReader { geometry in
+                ScrollView {
+                    if !revoked, let image = UIImage(data: photo.jpeg) {
+                        Image(uiImage: image).resizable().scaledToFit()
+                            .frame(width: geometry.size.width)
+                            .accessibilityLabel(String(localized: "diary.viewPhoto"))
+                    }
+                }.background(Color.black)
             }
+            .toolbar { ToolbarItem(placement: .confirmationAction) {
+                Button(String(localized: "common.done")) { dismiss() }.accessibilityIdentifier("diary.photoDone")
+            } }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .background(
-            colorScheme == .light
-                ? Color(red: 0.95, green: 0.95, blue: 0.95).opacity(0.8)
-                : Color(red: 0.2, green: 0.2, blue: 0.2).opacity(0.8)
-        )
-    }
-
-    private func scheduleAutoSave() {
-        autoSaveTask?.cancel()
-        autoSaveTask = Task.detached(priority: .background) { [title, content] in
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
-            await MainActor.run {
-                onAutoSave(title, content)
-                lastAutoSaved = Date()
-            }
-        }
-    }
-
-    private func formatted(date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .none
-        formatter.timeStyle = .short
-        return formatter.string(from: date)
-    }
-
-    private enum Field {
-        case title
-        case content
+        .onReceive(NotificationCenter.default.publisher(for: .vaultWillLock)) { _ in revoked = true; dismiss() }
     }
 }
 
-#Preview {
-    NavigationStack {
-        NoteEditorView(
-            initialTitle: "",
-            initialContent: "",
-            isNewNote: true,
-            onSave: { _, _ in },
-            onAutoSave: { _, _ in }
-        )
+private struct DiaryPrivateInput: ViewModifier {
+    @ViewBuilder func body(content: Content) -> some View {
+        if #available(iOS 18.0, *) { content.writingToolsBehavior(.disabled) }
+        else { content }
     }
 }

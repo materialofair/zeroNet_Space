@@ -36,6 +36,10 @@ final class SecretNote {
     /// 标签 (可选,用于分类)
     var tags: [String]
 
+    /// New and explicitly edited entries keep title, text and photos inside this ciphertext.
+    /// Optional for lossless compatibility with the original text-only schema.
+    @Attribute(.externalStorage) var encryptedDiary: Data?
+
     // MARK: - Initialization
 
     init(

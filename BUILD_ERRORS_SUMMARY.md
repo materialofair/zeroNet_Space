@@ -67,3 +67,8 @@ Xcode / iOS 26.5 SDK，iPhone 17 模拟器。当前机器没有 iPhone 15 模拟
 `AudioUITests.testAudioNavigationRecordingPlaybackAndDelete` 在当前 iOS 26.5 模拟器的 `AVAudioRecorder.prepareToRecord()` 卡住。进程采样落在 AudioToolbox 的 `AudioQueueObject::ConnectToIONodeEffects` / `AQMixEngine_Base::DevLock` 等待；未执行到暂停、保存、重命名、删除等后续断言。切换模拟器输出设备及重启未解决，输出设备已恢复为原系统默认值。不将此用例计为通过，完整录音链路仍需要真机验收。
 
 本次改为只录音的 AVAudioSession.record 类别，播放时单独切换 playback；不启用后台持续录音。已有可解码音频的加密和解密测试通过，但不等同于麦克风硬件验收。
+
+
+## Public source snapshot verification — 2026-10-25
+
+SealedPocket 1.3.11 (25) Release device-SDK build passed with Xcode 27.1 and signing disabled. Fresh iPhone 17 / iOS 26.5 unit verification passed: 97 XCTest + 21 Swift Testing cases; one restart fixture skipped because this disposable vault had not been set up. Targeted UI verification and limits are recorded in [source snapshot notes](docs/source-1.3.11-build25.md). Full UI/device coverage was not rerun for this publication. Existing Swift 6 isolation/import, deprecated API and asset-catalog warnings remain; application code is preserved from the released source.

@@ -99,7 +99,8 @@ class LocalizationTests: XCTestCase {
 
     func testAppVersion() throws {
         print("🔍 AppConstants.appVersion = \(AppConstants.appVersion)")
-        XCTAssertEqual(AppConstants.appVersion, "1.3.9")
+        XCTAssertEqual(AppConstants.appVersion, Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
+                       "Displayed version must match this build’s metadata")
     }
 
     // MARK: - Chinese Locale Tests

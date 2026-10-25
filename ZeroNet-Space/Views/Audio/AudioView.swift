@@ -74,7 +74,9 @@ struct AudioView: View {
             }
         }
         .safeAreaInset(edge: .bottom) {
-            if guest.isOwnerMode { recordingPanel }
+            if guest.isOwnerMode {
+                recordingPanel.frame(maxWidth: 760).frame(maxWidth: .infinity)
+            }
         }
         .overlay {
             if isSaving || isSharing {
