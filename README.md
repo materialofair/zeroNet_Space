@@ -1,4 +1,18 @@
-# 零网络空间 / ZeroNet Space
+# SealedPocket: encrypted photo, file and diary vault
+**App Store name: Photo Vault: SealedPocket. Formerly ZeroNet Space (零网络空间).** This is the same app, with App Store ID **6755504480**; the repository name is unchanged.
+
+SealedPocket is an iPhone and iPad vault for keeping photos, videos, files, private notes, diary entries and recordings on the device. It suits people who want an encrypted local library without an app account or automatic cloud synchronization.
+
+## Current product facts
+
+- Import and view personal content locally. Chosen sharing or export sends a copy to the app or location you select.
+- The free media/file allowance is **75 items**, including saved recordings. Optional VIP is a **one-time purchase**, not a subscription; available device storage still limits capacity.
+- Write rich-text diary entries with photos. Existing VIP includes exporting an individual diary entry as a selectable, multi-page PDF.
+- Password access, automatic locking, an app-switcher privacy cover and guest-password access help control access. Keep a separate copy of important content and keep your password safe.
+- Requires **iOS/iPadOS 17.6 or later**. The App Store lists English, Simplified and Traditional Chinese, French, German, Indonesian, Japanese, Polish, Portuguese and Spanish.
+- Purchases and restoration use Apple's StoreKit network services. Check the [live App Store listing](https://apps.apple.com/app/id6755504480) for current availability, purchase options and regional prices.
+
+**中文：** SealedPocket 原名 ZeroNet Space（零网络空间），是同一个 App。它在 iPhone/iPad 本地保存加密照片、视频、文件、笔记、日记与录音，无需应用账号，不自动上传或同步云端。免费媒体与文件额度为 75 项，可选一次性 VIP；富文本图文日记及会员单篇 PDF 导出已上线。购买和恢复购买需要 Apple 网络服务，重要内容请另存副本。
 
 > **Source snapshot / 源码快照:** [SealedPocket 1.3.11 (25): provenance, build, tests and limits](docs/source-1.3.11-build25.md)
 
@@ -25,6 +39,12 @@
 </div>
 
 ---
+## Earlier project documentation
+
+The sections below preserve earlier development documentation, including historical names, dates, feature groupings and roadmap ideas. They are not a current release checklist or future release commitment. Use the product facts above, the linked App Store listing and the versioned source notes for current behavior and build guidance. Source availability is not an independent security audit or proof that an App Store binary is byte-for-byte reproducible.
+
+以下保留早期项目文档，其中旧名称、日期、功能分组和路线图属于历史资料，不代表当前版本清单或后续发布承诺。当前功能以本页顶部、App Store 页面和对应版本源码说明为准。源码公开不等于经过独立安全审计，也不等于商店二进制可逐字节复现。
+
 ## English
 
 ### 📖 About
