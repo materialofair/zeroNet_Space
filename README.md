@@ -3,6 +3,10 @@
 
 SealedPocket is an iPhone and iPad vault for keeping photos, videos, files, private notes, diary entries and recordings on the device. It suits people who want an encrypted local library without an app account or automatic cloud synchronization.
 
+## Practical tutorial / 实用教程
+
+[Keep a photo diary private, then share a deliberate copy](docs/PHOTO_DIARY_SHARING.md) · 含中文操作要点，说明单篇 PDF 导出和本地保存的边界。
+
 ## Current product facts
 
 - Import and view personal content locally. Chosen sharing or export sends a copy to the app or location you select.
